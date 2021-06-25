@@ -1,0 +1,56 @@
+//GET https://www.googleapis.com/youtube/v3/channels
+
+GET https://localhost:3001/token?code=4/0AY0e-g46TUjtgpS1TWWQEQJigvhy-6R0mSgZvZ_E5V2mLEI2ijWg7sEq4PRReLsWlmQSsw
+
+GET http://admin:admin@192.168.1.76:5984/_up
+
+###
+# CREATE A DB
+
+PUT http://admin:admin@127.0.0.1:5984/users
+
+###
+# CHECK DB
+
+GET http://admin:admin@127.0.0.1:5984/_all_dbs
+
+###
+# DELETE A DB
+
+DELETE http://admin:admin@127.0.0.1:5984/yt_test_db
+
+###
+# CREATE a DOC
+
+PUT http://admin:admin@192.168.1.76:5984/my_database_2/5
+content-type: application/json
+
+{
+    "name": "andrea",
+    "surname": "vitaletti"
+}
+
+###
+#list all docs in the DB
+GET http://admin:admin@127.0.0.1:5984/users/_all_docs
+
+###
+# GET CONTENT OF A DOC
+GET http://admin:admin@127.0.0.1:5984/users/4268688203170663
+
+### NON-EXISTENT GET
+GET http://admin:admin@127.0.0.1:5984/yt_test_db_user/s
+
+###
+# UPDATE A DOC
+PUT http://admin:admin@127.0.0.1:5984/users/4268688203170663
+
+{
+    "_rev": "6-4f09e8a605761323a1336ca205ca3a2a",
+    "nome": "Laaners"
+}
+
+###
+# DELETE a DOC
+
+DELETE http://admin:admin@127.0.0.1:5984/my_database/1?rev=2-c8d48abcb0f00e5976dd3f6cd91be3ab

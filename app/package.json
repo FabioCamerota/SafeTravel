@@ -1,0 +1,32 @@
+{
+  "name": "my_api_project",
+  "version": "1.0.0",
+  "description": "Test con API di Youtube",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "apidoc": "^0.28.1",
+    "cookie-parser": "^1.4.5",
+    "cookie-session": "^1.4.0",
+    "cors": "^2.8.5",
+    "dotenv": "^8.6.0",
+    "express": "^4.17.1",
+    "express-session": "^1.17.2",
+    "fs": "0.0.1-security",
+    "https": "^1.0.0",
+    "node": "^16.1.0",
+    "openssl": "^1.1.0",
+    "passport": "^0.4.1",
+    "passport-facebook": "^3.0.0",
+    "path": "^0.12.7",
+    "request": "^2.88.2",
+    "session": "^0.1.0",
+    "vue-router": "^3.5.1",
+    "ws": "^7.4.6"
+  },
+  "author": "",
+  "license": "ISC"
+}

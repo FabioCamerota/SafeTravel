@@ -1,0 +1,19 @@
+version: "3.8"
+services:
+    couchdb:
+        image: couchdb
+        environment:
+            - COUCHDB_USER=admin
+            - COUCHDB_PASSWORD=admin
+        ports:
+            - 5984:5984
+        restart: on-failure
+    nodeserver:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        ports:
+            - "3000:3000"
+        depends_on:
+            - couchdb
+        restart: on-failure

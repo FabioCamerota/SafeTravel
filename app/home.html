@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+    <header>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Home</title>
+        <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+    </header>
+    <body>
+        <a href="https://localhost:3000/login">
+            <button id="login">login</button>
+        </a>
+        <a href="https://localhost:3000/logout">
+            <button id="logout">logout</button>
+        </a>
+        <script>
+
+            $("#login").click(function() {
+			    var httpRequest = new XMLHttpRequest();
+			    httpRequest.onreadystatechange = function(e) {
+                    if (e.target.readyState == XMLHttpRequest.DONE){
+                        $("div").html(`<p>${e.target.responseText}</p>`)
+                    }
+                }
+		    	httpRequest.open("GET",`https://localhost:3000/login`,true);
+	    		httpRequest.send();
+            });
+
+            $("#logout").click(function() {
+			    var httpRequest = new XMLHttpRequest();
+			    httpRequest.onreadystatechange = function(e) {
+                    if (e.target.readyState == XMLHttpRequest.DONE){
+                        $("div").html(`<p>${e.target.responseText}</p>`)
+                    }
+                }
+		    	httpRequest.open("GET",`https://localhost:3000/logout`,true);
+	    		httpRequest.send();
+            });
+
+        </script>    
+    </body>
+</html>
