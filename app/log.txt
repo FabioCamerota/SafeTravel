@@ -1,11 +1,214 @@
-{
-  installed: {
-    client_id: '628875862811-loh2eoct3aqplmuq6pic9632ri81sld9.apps.googleusercontent.com',
-    project_id: 'youtube-upload-script-298819',
-    auth_uri: 'https://accounts.google.com/o/oauth2/auth',
-    token_uri: 'https://oauth2.googleapis.com/token',
-    auth_provider_x509_cert_url: 'https://www.googleapis.com/oauth2/v1/certs',
-    client_secret: 'P8DCtGdLpu840bcUg8gbTR_U',
-    redirect_uris: [ 'urn:ietf:wg:oauth:2.0:oob', 'http://localhost' ]
+[
+  {
+    type: 'flight-destination',
+    origin: 'MAD',
+    destination: 'LIS',
+    departureDate: '2021-07-02',
+    returnDate: '2021-07-09',
+    price: { total: '55.42' },
+    links: {
+      flightDates: 'https://test.api.amadeus.com/v1/shopping/flight-dates?origin=MAD&destination=LIS&departureDate=2021-06-27,2021-12-23&oneWay=false&duration=1,15&nonStop=false&viewBy=DURATION',
+      flightOffers: 'https://test.api.amadeus.com/v2/shopping/flight-offers?originLocationCode=MAD&destinationLocationCode=LIS&departureDate=2021-07-02&returnDate=2021-07-09&adults=1&nonStop=false'
+    }
+  },
+  {
+    type: 'flight-destination',
+    origin: 'MAD',
+    destination: 'PMI',
+    departureDate: '2021-10-19',
+    returnDate: '2021-11-03',
+    price: { total: '56.58' },
+    links: {
+      flightDates: 'https://test.api.amadeus.com/v1/shopping/flight-dates?origin=MAD&destination=PMI&departureDate=2021-06-27,2021-12-23&oneWay=false&duration=1,15&nonStop=false&viewBy=DURATION',
+      flightOffers: 'https://test.api.amadeus.com/v2/shopping/flight-offers?originLocationCode=MAD&destinationLocationCode=PMI&departureDate=2021-10-19&returnDate=2021-11-03&adults=1&nonStop=false'
+    }
+  },
+  {
+    type: 'flight-destination',
+    origin: 'MAD',
+    destination: 'BCN',
+    departureDate: '2021-07-08',
+    returnDate: '2021-07-14',
+    price: { total: '58.61' },
+    links: {
+      flightDates: 'https://test.api.amadeus.com/v1/shopping/flight-dates?origin=MAD&destination=BCN&departureDate=2021-06-27,2021-12-23&oneWay=false&duration=1,15&nonStop=false&viewBy=DURATION',
+      flightOffers: 'https://test.api.amadeus.com/v2/shopping/flight-offers?originLocationCode=MAD&destinationLocationCode=BCN&departureDate=2021-07-08&returnDate=2021-07-14&adults=1&nonStop=false'
+    }
+  },
+  {
+    type: 'flight-destination',
+    origin: 'MAD',
+    destination: 'LGW',
+    departureDate: '2021-12-20',
+    returnDate: '2021-12-30',
+    price: { total: '65.05' },
+    links: {
+      flightDates: 'https://test.api.amadeus.com/v1/shopping/flight-dates?origin=MAD&destination=LGW&departureDate=2021-06-27,2021-12-23&oneWay=false&duration=1,15&nonStop=false&viewBy=DURATION',
+      flightOffers: 'https://test.api.amadeus.com/v2/shopping/flight-offers?originLocationCode=MAD&destinationLocationCode=LGW&departureDate=2021-12-20&returnDate=2021-12-30&adults=1&nonStop=false'
+    }
+  },
+  {
+    type: 'flight-destination',
+    origin: 'MAD',
+    destination: 'OPO',
+    departureDate: '2021-06-29',
+    returnDate: '2021-06-30',
+    price: { total: '68.76' },
+    links: {
+      flightDates: 'https://test.api.amadeus.com/v1/shopping/flight-dates?origin=MAD&destination=OPO&departureDate=2021-06-27,2021-12-23&oneWay=false&duration=1,15&nonStop=false&viewBy=DURATION',
+      flightOffers: 'https://test.api.amadeus.com/v2/shopping/flight-offers?originLocationCode=MAD&destinationLocationCode=OPO&departureDate=2021-06-29&returnDate=2021-06-30&adults=1&nonStop=false'
+    }
+  },
+  {
+    type: 'flight-destination',
+    origin: 'MAD',
+    destination: 'LIN',
+    departureDate: '2021-08-13',
+    returnDate: '2021-08-19',
+    price: { total: '69.42' },
+    links: {
+      flightDates: 'https://test.api.amadeus.com/v1/shopping/flight-dates?origin=MAD&destination=LIN&departureDate=2021-06-27,2021-12-23&oneWay=false&duration=1,15&nonStop=false&viewBy=DURATION',
+      flightOffers: 'https://test.api.amadeus.com/v2/shopping/flight-offers?originLocationCode=MAD&destinationLocationCode=LIN&departureDate=2021-08-13&returnDate=2021-08-19&adults=1&nonStop=false'
+    }
+  },
+  {
+    type: 'flight-destination',
+    origin: 'MAD',
+    destination: 'FCO',
+    departureDate: '2021-10-12',
+    returnDate: '2021-10-18',
+    price: { total: '75.91' },
+    links: {
+      flightDates: 'https://test.api.amadeus.com/v1/shopping/flight-dates?origin=MAD&destination=FCO&departureDate=2021-06-27,2021-12-23&oneWay=false&duration=1,15&nonStop=false&viewBy=DURATION',
+      flightOffers: 'https://test.api.amadeus.com/v2/shopping/flight-offers?originLocationCode=MAD&destinationLocationCode=FCO&departureDate=2021-10-12&returnDate=2021-10-18&adults=1&nonStop=false'
+    }
+  },
+  {
+    type: 'flight-destination',
+    origin: 'MAD',
+    destination: 'RAK',
+    departureDate: '2021-11-04',
+    returnDate: '2021-11-12',
+    price: { total: '77.19' },
+    links: {
+      flightDates: 'https://test.api.amadeus.com/v1/shopping/flight-dates?origin=MAD&destination=RAK&departureDate=2021-06-27,2021-12-23&oneWay=false&duration=1,15&nonStop=false&viewBy=DURATION',
+      flightOffers: 'https://test.api.amadeus.com/v2/shopping/flight-offers?originLocationCode=MAD&destinationLocationCode=RAK&departureDate=2021-11-04&returnDate=2021-11-12&adults=1&nonStop=false'
+    }
+  },
+  {
+    type: 'flight-destination',
+    origin: 'MAD',
+    destination: 'ORY',
+    departureDate: '2021-07-17',
+    returnDate: '2021-07-18',
+    price: { total: '77.89' },
+    links: {
+      flightDates: 'https://test.api.amadeus.com/v1/shopping/flight-dates?origin=MAD&destination=ORY&departureDate=2021-06-27,2021-12-23&oneWay=false&duration=1,15&nonStop=false&viewBy=DURATION',
+      flightOffers: 'https://test.api.amadeus.com/v2/shopping/flight-offers?originLocationCode=MAD&destinationLocationCode=ORY&departureDate=2021-07-17&returnDate=2021-07-18&adults=1&nonStop=false'
+    }
+  },
+  {
+    type: 'flight-destination',
+    origin: 'MAD',
+    destination: 'LPA',
+    departureDate: '2021-06-30',
+    returnDate: '2021-07-01',
+    price: { total: '84.98' },
+    links: {
+      flightDates: 'https://test.api.amadeus.com/v1/shopping/flight-dates?origin=MAD&destination=LPA&departureDate=2021-06-27,2021-12-23&oneWay=false&duration=1,15&nonStop=false&viewBy=DURATION',
+      flightOffers: 'https://test.api.amadeus.com/v2/shopping/flight-offers?originLocationCode=MAD&destinationLocationCode=LPA&departureDate=2021-06-30&returnDate=2021-07-01&adults=1&nonStop=false'
+    }
+  },
+  {
+    type: 'flight-destination',
+    origin: 'MAD',
+    destination: 'AMS',
+    departureDate: '2021-07-01',
+    returnDate: '2021-07-02',
+    price: { total: '86.99' },
+    links: {
+      flightDates: 'https://test.api.amadeus.com/v1/shopping/flight-dates?origin=MAD&destination=AMS&departureDate=2021-06-27,2021-12-23&oneWay=false&duration=1,15&nonStop=false&viewBy=DURATION',
+      flightOffers: 'https://test.api.amadeus.com/v2/shopping/flight-offers?originLocationCode=MAD&destinationLocationCode=AMS&departureDate=2021-07-01&returnDate=2021-07-02&adults=1&nonStop=false'
+    }
+  },
+  {
+    type: 'flight-destination',
+    origin: 'MAD',
+    destination: 'JFK',
+    departureDate: '2021-11-12',
+    returnDate: '2021-11-23',
+    price: { total: '212.38' },
+    links: {
+      flightDates: 'https://test.api.amadeus.com/v1/shopping/flight-dates?origin=MAD&destination=JFK&departureDate=2021-06-27,2021-12-23&oneWay=false&duration=1,15&nonStop=false&viewBy=DURATION',
+      flightOffers: 'https://test.api.amadeus.com/v2/shopping/flight-offers?originLocationCode=MAD&destinationLocationCode=JFK&departureDate=2021-11-12&returnDate=2021-11-23&adults=1&nonStop=false'
+    }
+  },
+  {
+    type: 'flight-destination',
+    origin: 'MAD',
+    destination: 'MIA',
+    departureDate: '2021-08-29',
+    returnDate: '2021-09-09',
+    price: { total: '220.56' },
+    links: {
+      flightDates: 'https://test.api.amadeus.com/v1/shopping/flight-dates?origin=MAD&destination=MIA&departureDate=2021-06-27,2021-12-23&oneWay=false&duration=1,15&nonStop=false&viewBy=DURATION',
+      flightOffers: 'https://test.api.amadeus.com/v2/shopping/flight-offers?originLocationCode=MAD&destinationLocationCode=MIA&departureDate=2021-08-29&returnDate=2021-09-09&adults=1&nonStop=false'
+    }
+  },
+  {
+    type: 'flight-destination',
+    origin: 'MAD',
+    destination: 'CUN',
+    departureDate: '2021-09-14',
+    returnDate: '2021-09-15',
+    price: { total: '274.48' },
+    links: {
+      flightDates: 'https://test.api.amadeus.com/v1/shopping/flight-dates?origin=MAD&destination=CUN&departureDate=2021-06-27,2021-12-23&oneWay=false&duration=1,15&nonStop=false&viewBy=DURATION',
+      flightOffers: 'https://test.api.amadeus.com/v2/shopping/flight-offers?originLocationCode=MAD&destinationLocationCode=CUN&departureDate=2021-09-14&returnDate=2021-09-15&adults=1&nonStop=false'
+    }
+  },
+  {
+    type: 'flight-destination',
+    origin: 'MAD',
+    destination: 'LAX',
+    departureDate: '2021-10-27',
+    returnDate: '2021-11-09',
+    price: { total: '445.47' },
+    links: {
+      flightDates: 'https://test.api.amadeus.com/v1/shopping/flight-dates?origin=MAD&destination=LAX&departureDate=2021-06-27,2021-12-23&oneWay=false&duration=1,15&nonStop=false&viewBy=DURATION',
+      flightOffers: 'https://test.api.amadeus.com/v2/shopping/flight-offers?originLocationCode=MAD&destinationLocationCode=LAX&departureDate=2021-10-27&returnDate=2021-11-09&adults=1&nonStop=false'
+    }
+  },
+  {
+    type: 'flight-destination',
+    origin: 'MAD',
+    destination: 'BKK',
+    departureDate: '2021-09-02',
+    returnDate: '2021-09-09',
+    price: { total: '466.21' },
+    links: {
+      flightDates: 'https://test.api.amadeus.com/v1/shopping/flight-dates?origin=MAD&destination=BKK&departureDate=2021-06-27,2021-12-23&oneWay=false&duration=1,15&nonStop=false&viewBy=DURATION',
+      flightOffers: 'https://test.api.amadeus.com/v2/shopping/flight-offers?originLocationCode=MAD&destinationLocationCode=BKK&departureDate=2021-09-02&returnDate=2021-09-09&adults=1&nonStop=false'
+    }
   }
+]
+{
+  type: 'flight-offers-pricing',
+  flightOffers: [
+    {
+      type: 'flight-offer',
+      id: '1',
+      source: 'GDS',
+      instantTicketingRequired: false,
+      nonHomogeneous: false,
+      paymentCardRequired: false,
+      lastTicketingDate: '2021-08-01',
+      itineraries: [Array],
+      price: [Object],
+      pricingOptions: [Object],
+      validatingAirlineCodes: [Array],
+      travelerPricings: [Array]
+    }
+  ],
+  bookingRequirements: {}
 }

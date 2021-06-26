@@ -4,16 +4,10 @@ const request = require('request');
 const session = require('express-session');
 const fs = require('fs');
 const https = require('https');
-const passport = require('passport');
-const FacebookStrategy = require('passport-facebook').Strategy;
 const cors = require('cors');
 
 var app = express(); // Express configuration
-
-app.use(cors()); //cors policy
-app.use(passport.initialize()); // Initialize Passport and restore authentication state, if any, from the...
-//app.use(passport.session()); // ...session, posso usare cookie
-
+//app.use(cors()); //cors policy
 app.use(session({ //SESSION
 	secret: 'RDC-progetto',
 	resave: true,
@@ -27,35 +21,9 @@ const options = {
 
 port = 3000;
 
-passport.serializeUser((user, cb) => {
-    cb(null, user);
-});
+var client_id = process.env.CLIENT_ID_FB;
+var client_secret = process.env.CLIENT_SECRET_FB;
 
-passport.deserializeUser((obj, cb) => {
-    cb(null, obj);
-});
-
-console.log(process.env);
-console.log(process.env.CLIENT_ID_FB);
-console.log(process.env.CLIENT_SECRET_FB);
-
-passport.use(new FacebookStrategy({
-    clientID: process.env.CLIENT_ID_FB,
-    clientSecret: process.env.CLIENT_SECRET_FB,
-    callbackURL: "https://localhost:3000/auth/facebook/callback"
-  },
-  function(accessToken, refreshToken, profile, done) {
-	console.log(profile);
-	/*findOrCreateUser(profile).then(function(user) { 
-		console.log(user);
-		done(null,user); //adesso richiamo serializeUser con done
-	});*/
-	updateUser(profile,accessToken).then(function(user) {
-		console.log(user);
-		done(null,user);
-	});
-  }
-));
 
 app.get('/', function(req,res) {
 	if(typeof(req.session.passport) != "undefined" && typeof(req.session.passport.user) != "undefined") {
@@ -66,36 +34,76 @@ app.get('/', function(req,res) {
 	res.sendFile("home.html",{root:__dirname});
 });
 
-app.get('/login', passport.authenticate('facebook', { scope: ['read_stream', 'publish_actions'] }));
+app.get('/login', function(req,res) {
+	res.redirect(`https://www.facebook.com/v10.0/dialog/oauth?response_type=code&scope=email&client_id=${client_id}&redirect_uri=https://localhost:3000/home&client_secret=${client_secret}`);
+});
+
+app.get('/home', function(req,res) {
+	if(req.query.error=='access_denied'){
+		console.log("Non autorizzato");
+		res.redirect('/');
+	}
+	else if(req.query.code!=null || req.session.code!=null){
+		var code= req.query.code;
+		request.get({
+			url:`https://graph.facebook.com/v10.0/oauth/access_token?client_id=${client_id}&redirect_uri=https://localhost:3000/home&client_secret=${client_secret}&code=${code}`
+		}, function(err, res_get, body) {
+			if (err) {
+				return console.error('Auth failed:', err);
+			}
+			var info = JSON.parse(body);
+			console.log("QUERY:"+JSON.stringify(req.query));
+			console.log("BODY:"+body);
+			if(info.error) {
+				res.redirect("/failure");
+			}
+			else {
+				/*console.log('Upload successful!  Server responded with:', body);
+				getDati(info.access_token).then(function(infoPromise) {
+					req.session.id_cliente = infoPromise.id;
+					req.session.code = code;
+					req.session.a_t= info.access_token;
+					var id = req.session.id_cliente;
+					var ss = req.sessionID;
+					var nomecognome= infoPromise.name;
+					var nome= nomecognome.split(" ")[0];
+					var cognome = nomecognome.split(" ")[1];
+					var aggiorna = aggiorna_sessione(id, ss, nome, cognome);
+					aggiorna.then(function(result){
+						if(result){
+							res.sendFile("home.html",{root:__dirname});
+						}
+						else{
+							res.redirect(pagina_root);
+							console.log("Variabile di sessione non cambiata o inizializzata");
+						}
+					})
+				});*/
+//				res.redirect("/failure");
+				req.session.token = JSON.parse(body).access_token;
+				res.sendFile("home2.html",{root:__dirname});
+			}
+		});
+	} 
+	else {
+		res.redirect("/");
+	}
+});
 
 app.get('/logout', function(req, res){
-	req.logout();
-	res.clearCookie('express:sess');
-	res.clearCookie('express:sess.sig');
-	console.log("QUERY: "+JSON.stringify(req.query));
-	console.log("SESSION: "+JSON.stringify(req.session));
-	res.redirect('/');
+	res.send("LOGOUT");
 });
 
 app.get('/failure', function(req,res) {
 	console.log("failure");
-	res.send("failure");
+	console.log(req.session);
+	res.send(JSON.stringify(req.session));
 });
-
-app.get('/auth/facebook', passport.authenticate('facebook', { scope: ['read_stream', 'publish_actions'] }));
-
-app.get('/auth/facebook/callback',
-  passport.authenticate('facebook', { failureRedirect: '/failure' }),
-  function(req, res) {
-	console.log(req);
-    // Successful authentication, redirect home.
-	res.redirect("https://localhost:3000/");
-  });
 
 app.get('/user_info', function(req,res) {
 	console.log(req.session);
-	if(typeof(req.session.passport) != "undefined" && typeof(req.session.passport.user) != "undefined") {
-		request.get({url:'https://graph.facebook.com/v10.0/me/?fields=name,email,id,birthday,hometown&access_token='+req.session.passport.user.token}, function (err, res_get, body) {
+	if(typeof(req.session) != "undefined" && typeof(req.session.token) != "undefined") {
+		request.get({url:'https://graph.facebook.com/v10.0/me/?fields=name,email,id,birthday,hometown&access_token='+req.session.token}, function (err, res_get, body) {
 	//	request.get({url:'https://graph.facebook.com/v10.0/me/photos?access_token='+req.session.passport.user.token}, function (err, res_get, body) {
 			if(err) {
 				reject("Errore di richiesta dati");

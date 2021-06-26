@@ -1,2 +1,25 @@
 aferrante99@gmail.com
 SafeTravel99!
+
+
+Amadeus predispone dei moduli in nodejs per fare le chiamate, ho visto ed è molto facile da usare, ecco la documentazione:
+https://github.com/amadeus4dev/amadeus-node
+Ho visto un po' e sulla ricerca degli itinerari, limitandosi ai nostri scopi nell'ambito del progetto, amadeus permette di fare queste cose:
+- Data una città di origine, posso trovare tutti i possibili voli verso tutti le possibili destinazioni
+- Data una città di origine, una destinazione, una data di partenza e numero di adulti (campi necessari, si può poi avere altri campi opzionali come eventuale numero di bambini) 
+	posso trovare tutti i voli con quelle caratteristiche
+	Su questa chiamata è poi da notare che è abbastanza lenta da quel che ho visto
+- Dato un airline code, identificativo della compagnia che ha predisposto il volo (codice ottenibile dai due punti precendenti) posso trovare i dati della compagnia 
+	come il business name e un link al sito ufficiale della compagnia per prenotare realmente il volo
+Si possono poi fare altre cose e vedere altri dati come destinazioni scelte più volte, periodo con più prenotazioni, voli più prenotati etc..., 
+però mi sembravano sforare da quello che volevamo fare con il progetto. A livello di codice penso sia abbastanza semplice come ho detto, 
+quindi ora mi serve sapere ESATTAMENTE quali parametri di ricerca un nostro utente inserisce per trovare un volo così inizio a lavorarci
+Io pensavo tipo a luogo_partenza, luogo_arrivo, data_partenza, data_arrivo e poi ti appariva una tabella/lista con gli itinerari organizzati in riquadri, ogni riquadro l'avevo immaginato così:
+- Con i vari dati dell'itinerario, compreso posti disponibili e prezzo
+- Con i dati covid 
+- Con un link (href) che ti manda al sito ufficiale della compagnia per prenotare il volo (è solo una cosa estetica, la prenotazione non la gestiamo noi appunto)
+- Con un buttone "mi interessa/aggiungi ai miei itinerari" e poi un altro per condividere su fb
+- Se volete anche con un'immagine della destinazione preso da BING come in quel progetto là dei sondaggi
+Questa tabella/lista poi direi di renderlo ordinabile in base al prezzo o ai dati dei contagi (sempre che ci riusciamo)
+Comunque il mio dubbio è sui parametri di ricerca, ditemi voi se vanno bene o vanno aggiunti altri parametri come prezzo_max, contagi_max oppure vanno tolti alcuni
+Potete anche dare un'occhiata alla documentazione che ho linkato, ci sono appunto altre funzionalità che ho ignorato ma che se volete possiamo implementare

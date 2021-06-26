@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+    <header>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Home</title>
+        <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+    </header>
+    <body>
+        <form name="mainform" action="https://localhost:3000/cerca_meta" method="get">
+            Citt&agrave; di partenza
+            <input name="origin" list="suggestions" value="BANGKOK (THAILAND)">
+            <br/>
+            Citt&agrave; di arrivo
+            <input name="destination" list="suggestions" value="AARHUS (DENMARK)">
+            <br/>
+            Data di partenza
+            <input type="date" id="depdate" name="departureDate" value="2021-08-01" min="2018-01-01">
+            <br/>            
+
+            <input type="submit" value="Submit">
+
+            <datalist id="suggestions">
+            </datalist>
+        </form>
+
+        <button id="test">TEST</button>
+        
+
+        <div id="table"></div>
+
+        <script>
+
+            n =  new Date();
+            y = n.getFullYear();
+            m = n.getMonth() + 1; if(m < 10) m = "0"+m;
+            d = n.getDate(); if(d < 10) d = "0"+d;
+            $("#depdate").attr("min",`${y}-${m}-${d}`);
+            //$("#depdate").attr("value",`${y}-${m}-${d}`);
+
+            $.ajax({
+                type: "GET",
+                url: "GlobalAirportDatabase.txt",
+                success: function (data) {
+                    var arr = data.split("\n").map(function(v) {
+                        let values = v.split(":");
+                        let object = {
+                            IATA: values[1], 
+                            airport: values[2], 
+                            city: values[3], 
+                            country: values[4]
+                        }
+                        return object;
+                    });
+                    arr = arr.filter(v=>v.IATA!=`N/A`)
+                        .map(v=>`${v.city} (${v.country})`)
+                        .filter((v, i, a) => a.indexOf(v) === i)
+                        .sort();
+                    for(let i = 0; i < arr.length; i++) {
+                        if(arr[i] == undefined) continue;
+                        var city = arr[i];
+                        $("#suggestions").append(`<option value="${city}">`);
+                    }
+                },
+                error: function() {
+                    $("#anchor").text("");
+                }
+            });
+
+            $("#test").click(function() {                
+			    var httpRequest = new XMLHttpRequest();
+                $("#table").html("Caricamento...");
+			    httpRequest.onreadystatechange = function(e) {
+                    if (e.target.readyState == XMLHttpRequest.DONE){
+                        $("#table").html(`<p>${e.target.responseText}</p>`)
+                    }
+                }
+		    	httpRequest.open("GET",`https://localhost:3000/cerca_meta?origin=${document.mainform.origin.value.replaceAll(" ","%20")}&destination=${document.mainform.destination.value.replaceAll(" ","%20")}&departureDate=${document.mainform.departureDate.value}`,true);
+	    		httpRequest.send();
+            });
+
+
+        </script>    
+    </body>
+</html>

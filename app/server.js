@@ -4,10 +4,17 @@ const request = require('request');
 const session = require('express-session');
 const fs = require('fs');
 const https = require('https');
+const passport = require('passport');
+const FacebookStrategy = require('passport-facebook').Strategy;
 const cors = require('cors');
+const Amadeus = require('amadeus');
 
 var app = express(); // Express configuration
-//app.use(cors()); //cors policy
+
+app.use(cors()); //cors policy
+app.use(passport.initialize()); // Initialize Passport and restore authentication state, if any, from the...
+//app.use(passport.session()); // ...session, posso usare cookie
+
 app.use(session({ //SESSION
 	secret: 'RDC-progetto',
 	resave: true,
@@ -21,9 +28,47 @@ const options = {
 
 port = 3000;
 
-var client_id = process.env.CLIENT_ID_FB;
-var client_secret = process.env.CLIENT_SECRET_FB;
+passport.serializeUser((user, cb) => {
+    cb(null, user);
+});
 
+passport.deserializeUser((obj, cb) => {
+    cb(null, obj);
+});
+
+var amadeus = new Amadeus({
+	clientId: process.env.AMADEUS_KEY,
+	clientSecret: process.env.AMADEUS_SECRET
+});
+
+const GADB = fs.readFileSync('GlobalAirportDatabase.txt').toString().split("\n").map(function(v) {
+	let values = v.split(":");
+	let object = {
+		IATA: values[1], 
+		airport: values[2], 
+		city: values[3], 
+		country: values[4]
+	}
+	return object;
+});
+
+passport.use(new FacebookStrategy({
+    clientID: process.env.CLIENT_ID_FB,
+    clientSecret: process.env.CLIENT_SECRET_FB,
+    callbackURL: "https://localhost:3000/auth/facebook/callback"
+  },
+  function(accessToken, refreshToken, profile, done) {
+	console.log(profile);
+	/*findOrCreateUser(profile).then(function(user) { 
+		console.log(user);
+		done(null,user); //adesso richiamo serializeUser con done
+	});*/
+	updateUser(profile,accessToken).then(function(user) {
+		console.log(user);
+		done(null,user);
+	});
+  }
+));
 
 app.get('/', function(req,res) {
 	if(typeof(req.session.passport) != "undefined" && typeof(req.session.passport.user) != "undefined") {
@@ -31,67 +76,19 @@ app.get('/', function(req,res) {
 		console.log("SESSION: "+JSON.stringify(req.session));
 		res.sendFile("home2.html",{root:__dirname});
 	}
-	res.sendFile("home.html",{root:__dirname});
+	else
+		res.sendFile("home.html",{root:__dirname});
 });
 
-app.get('/login', function(req,res) {
-	res.redirect(`https://www.facebook.com/v10.0/dialog/oauth?response_type=code&scope=email&client_id=${client_id}&redirect_uri=https://localhost:3000/home&client_secret=${client_secret}`);
-});
-
-app.get('/home', function(req,res) {
-	if(req.query.error=='access_denied'){
-		console.log("Non autorizzato");
-		res.redirect('/');
-	}
-	else if(req.query.code!=null || req.session.code!=null){
-		var code= req.query.code;
-		request.get({
-			url:`https://graph.facebook.com/v10.0/oauth/access_token?client_id=${client_id}&redirect_uri=https://localhost:3000/home&client_secret=${client_secret}&code=${code}`
-		}, function(err, res_get, body) {
-			if (err) {
-				return console.error('Auth failed:', err);
-			}
-			var info = JSON.parse(body);
-			console.log("QUERY:"+JSON.stringify(req.query));
-			console.log("BODY:"+body);
-			if(info.error) {
-				res.redirect("/failure");
-			}
-			else {
-				/*console.log('Upload successful!  Server responded with:', body);
-				getDati(info.access_token).then(function(infoPromise) {
-					req.session.id_cliente = infoPromise.id;
-					req.session.code = code;
-					req.session.a_t= info.access_token;
-					var id = req.session.id_cliente;
-					var ss = req.sessionID;
-					var nomecognome= infoPromise.name;
-					var nome= nomecognome.split(" ")[0];
-					var cognome = nomecognome.split(" ")[1];
-					var aggiorna = aggiorna_sessione(id, ss, nome, cognome);
-					aggiorna.then(function(result){
-						if(result){
-							res.sendFile("home.html",{root:__dirname});
-						}
-						else{
-							res.redirect(pagina_root);
-							console.log("Variabile di sessione non cambiata o inizializzata");
-						}
-					})
-				});*/
-//				res.redirect("/failure");
-				req.session.token = JSON.parse(body).access_token;
-				res.sendFile("home2.html",{root:__dirname});
-			}
-		});
-	} 
-	else {
-		res.redirect("/");
-	}
-});
+app.get('/login', passport.authenticate('facebook', { scope: ['read_stream', 'publish_actions'] }));
 
 app.get('/logout', function(req, res){
-	res.send("LOGOUT");
+	req.logout();
+	req.session.destroy();
+	console.log("QUERY: "+JSON.stringify(req.query));
+	console.log("SESSION: "+JSON.stringify(req.session));
+//	res.send(JSON.stringify(req.query)+"\n"+JSON.stringify(req.session));
+	res.redirect('/');
 });
 
 app.get('/failure', function(req,res) {
@@ -99,10 +96,20 @@ app.get('/failure', function(req,res) {
 	res.send("failure");
 });
 
+app.get('/auth/facebook', passport.authenticate('facebook', { scope: ['read_stream', 'publish_actions'] }));
+
+app.get('/auth/facebook/callback',
+  passport.authenticate('facebook', { failureRedirect: '/failure' }),
+  function(req, res) {
+	console.log(req);
+    // Successful authentication, redirect home.
+	res.redirect("https://localhost:3000/");
+  });
+
 app.get('/user_info', function(req,res) {
 	console.log(req.session);
-	if(typeof(req.session) != "undefined" && typeof(req.session.token) != "undefined") {
-		request.get({url:'https://graph.facebook.com/v10.0/me/?fields=name,email,id,birthday,hometown&access_token='+req.session.token}, function (err, res_get, body) {
+	if(typeof(req.session.passport) != "undefined" && typeof(req.session.passport.user) != "undefined") {
+		request.get({url:'https://graph.facebook.com/v10.0/me/?fields=name,email,id,birthday,hometown&access_token='+req.session.passport.user.token}, function (err, res_get, body) {
 	//	request.get({url:'https://graph.facebook.com/v10.0/me/photos?access_token='+req.session.passport.user.token}, function (err, res_get, body) {
 			if(err) {
 				reject("Errore di richiesta dati");
@@ -114,6 +121,36 @@ app.get('/user_info', function(req,res) {
 	}
 	else res.redirect("https://localhost:3000/user_info");
 });
+
+app.get('/mete', function(req,res) {
+	res.sendFile("mete.html",{root:__dirname});
+});
+
+app.get('/cerca_meta', function(req,res) {
+	var origin = GADB.filter(v=>`${v.city} (${v.country})`==req.query.origin)[0].IATA;
+	var destination = GADB.filter(v=>`${v.city} (${v.country})`==req.query.destination)[0].IATA;
+	console.log(req.query);
+	console.log(origin+"   "+destination);
+
+	amadeus.shopping.flightOffersSearch.get({
+		originLocationCode: origin,
+		destinationLocationCode: destination,
+		departureDate: req.query.departureDate,
+		adults: '1'
+	}).then(function(response){
+		console.log(response.data);
+		if(response.data.length == 0)
+			res.send("Nessun itinerario trovato");
+		else
+			res.send(JSON.stringify(response.data));
+	}).catch(function(responseError){
+		console.log(responseError.code);
+		res.send("Errore nel server");
+	});
+	
+});
+
+
 
 function updateUser(profile, accessToken) {
 	return new Promise(function(resolve, reject){
@@ -220,4 +257,6 @@ function findOrCreateUserNOUPDATE(profile) {
 	});
 }
 
-https.createServer(options, app).listen(port);
+https.createServer(options, app).listen(port, function() { 
+    console.log(`In ascolto sulla porta ${port}`);
+});
