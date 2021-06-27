@@ -57,3 +57,6 @@ DELETE http://admin:admin@127.0.0.1:5984/my_database/1?rev=2-c8d48abcb0f00e5976d
 
 ###
 GET http://api.coronatracker.com/v5/analytics/newcases/country?countryCode=AU&startDate=2020-04-01&endDate=2020-05-01
+
+###
+GET https://www.google.com/search?q=kirby&tbm=isch&ie=utf-8&oe=utf-8&sclient=gws-wiz

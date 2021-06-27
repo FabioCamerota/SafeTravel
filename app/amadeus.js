@@ -6,18 +6,8 @@ var amadeus = new Amadeus({
   clientId: process.env.AMADEUS_KEY,
   clientSecret: process.env.AMADEUS_SECRET
 });
-/*
-amadeus.shopping.flightOffersSearch.get({
-    originLocationCode: 'SYD',
-    destinationLocationCode: 'BKK',
-    departureDate: '2021-08-01',
-    adults: '2'
-}).then(function(response){
-  console.log(response.data);
-}).catch(function(responseError){
-  console.log(responseError.code);
-});
-*/
+
+
 /*
 amadeus.client.get('/v2/reference-data/urls/checkin-links', { airlineCode: 'BA' }).then(function(response){
     console.log(response.data);
@@ -26,31 +16,32 @@ amadeus.client.get('/v2/reference-data/urls/checkin-links', { airlineCode: 'BA' 
 });
 */
 
-
+/*
 amadeus.shopping.flightOffersSearch.get({
     originLocationCode: 'BKK',
-    destinationLocationCode: 'SYD',
+    destinationLocationCode: 'AAR',
     departureDate: '2021-08-01',
-    adults: '2'
+    adults: '1'
 }).then(function(response){
     console.log(response.data);
+    console.log(response.data.map(v=>v.itineraries.length));
 }).catch(function(responseError){
     console.log(responseError.code);
 });
-
-
-/*
-amadeus.referenceData.urls.checkinLinks.get({
-    airlineCode : 'MAD'
-}).then(function(response){
-    console.log(response.data);
-}).catch(function(responseError){
-    console.log(responseError);
-});
 */
 
+
+amadeus.referenceData.urls.checkinLinks.get({
+    airlineCode : 'LH'
+}).then(function(response){
+    console.log(response.data);
+}).catch(function(responseError){
+    console.log(responseError);
+});
+
+
 amadeus.referenceData.airlines.get({
-    airlineCodes : 'GKA'
+    airlineCodes : 'LH'
 }).then(function(response){
     console.log(response.data);
 }).catch(function(responseError){
@@ -59,7 +50,7 @@ amadeus.referenceData.airlines.get({
 
 
 /*
-amadeus.shopping.flightDestinations.get({origin : 'BKK'}).then(function(response){
+amadeus.shopping.flightDestinations.get({origin : 'SYD'}).then(function(response){
     console.log(response.data);
 }).catch(function(responseError){
     console.log(responseError.code);

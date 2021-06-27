@@ -4,10 +4,64 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Home</title>
+        
+        <!--JQUERY-->
         <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+
+        <!--BOOSTRAP-->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+
+        <!--FONT AWESOME-->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+        
+        <!--STILI PERSONALIZZATI-->
+        <style>
+            .itinerario {
+                margin: 0.5%;
+                border-radius: 1vw;
+                background-repeat:no-repeat;
+                background-position: center center;
+            } 
+            .itinerario:hover {
+                background-color: rgb(237, 238, 248); 
+            }
+            .details {
+                float: right; 
+                cursor: pointer; 
+                color: blue; 
+                text-decoration: underline;
+            }
+            .loader {
+                position: relative;
+                display: block;
+                margin-left: auto;
+                margin-right: auto;
+
+                border: 16px solid #f3f3f3;
+                border-radius: 50%;
+                border-top: 16px solid #3498db;
+                width: 120px;
+                height: 120px;
+                animation: spin 2s linear infinite;
+            }
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+            .modal-photo {
+                width: 300px;
+                height: 300px;
+                display: inline-block; /* or you could float them */
+                overflow: hidden;
+                background-size: cover;
+                border-radius: 50%;
+            }
+        </style>
     </header>
     <body>
-        <form name="mainform" action="https://localhost:3000/cerca_meta" method="get">
+        <form name="mainform">
             Citt&agrave; di partenza
             <input name="origin" list="suggestions" value="BANGKOK (THAILAND)">
             <br/>
@@ -18,16 +72,14 @@
             <input type="date" id="depdate" name="departureDate" value="2021-08-01" min="2018-01-01">
             <br/>            
 
-            <input type="submit" value="Submit">
-
+            <button type='button' id="cerca_itinerari">CERCA ITINERARI</button>
             <datalist id="suggestions">
             </datalist>
         </form>
 
-        <button id="test">TEST</button>
         
-
-        <div id="table"></div>
+        <div id="table">dsa</div>
+        <div id="modalAnchor"></div>
 
         <script>
 
@@ -38,21 +90,14 @@
             $("#depdate").attr("min",`${y}-${m}-${d}`);
             //$("#depdate").attr("value",`${y}-${m}-${d}`);
 
+            var GADB;
+
             $.ajax({
                 type: "GET",
-                url: "GlobalAirportDatabase.txt",
+                url: "https://localhost:3000/GADB",
                 success: function (data) {
-                    var arr = data.split("\n").map(function(v) {
-                        let values = v.split(":");
-                        let object = {
-                            IATA: values[1], 
-                            airport: values[2], 
-                            city: values[3], 
-                            country: values[4]
-                        }
-                        return object;
-                    });
-                    arr = arr.filter(v=>v.IATA!=`N/A`)
+                    GADB = data;
+                    arr = data.filter(v=>v.IATA!=`N/A`)
                         .map(v=>`${v.city} (${v.country})`)
                         .filter((v, i, a) => a.indexOf(v) === i)
                         .sort();
@@ -63,21 +108,184 @@
                     }
                 },
                 error: function() {
-                    $("#anchor").text("");
+                    alert("Errore");
                 }
             });
 
-            $("#test").click(function() {                
-			    var httpRequest = new XMLHttpRequest();
-                $("#table").html("Caricamento...");
-			    httpRequest.onreadystatechange = function(e) {
+            $("#cerca_itinerari").click(function() {                
+			    $("#table").html(`<div class="loader"></div>`);
+                var httpRequest = new XMLHttpRequest();                
+                httpRequest.onreadystatechange = function(e) {
                     if (e.target.readyState == XMLHttpRequest.DONE){
-                        $("#table").html(`<p>${e.target.responseText}</p>`)
+                        data2Flights(JSON.parse(e.target.responseText));
                     }
                 }
-		    	httpRequest.open("GET",`https://localhost:3000/cerca_meta?origin=${document.mainform.origin.value.replaceAll(" ","%20")}&destination=${document.mainform.destination.value.replaceAll(" ","%20")}&departureDate=${document.mainform.departureDate.value}`,true);
+		    	httpRequest.open("GET",`https://localhost:3000/cerca_itinerari?origin=${document.mainform.origin.value.replaceAll(" ","%20")}&destination=${document.mainform.destination.value.replaceAll(" ","%20")}&departureDate=${document.mainform.departureDate.value}`,true);
 	    		httpRequest.send();
             });
+
+            function photosSearch(allcities) {
+                $("#itinerary_modal .modal-content .modal-body").html(`<div class="loader"></div>`);
+                var ris = [];
+                for(let i = 0; i < allcities.length; i++) {
+                    $.ajax({
+                        type: "GET",
+                        url: `https://localhost:3000/photo?place=${allcities[i]}`,
+                        success: function(data) {
+                            ris.push({
+                                "num": i,
+                                "url": data
+                            });
+                            if(ris.length == allcities.length) {
+                                $("#itinerary_modal .modal-content .modal-body").html("");
+                                ris = ris.sort(function(a, b) {
+                                    return a.num-b.num;
+                                });
+
+                                for(let j = 0; j < ris.length; j++) {
+                                    $("#itinerary_modal .modal-content .modal-body").append(`
+                                        <div class="modal-photo" style="background-image: url('${ris[j].url}')"></div>
+                                        <br/>
+                                        <p>${allcities[j]}</p>
+                                        <div class="fa fa-angle-double-down"></div>
+                                        <br/>
+                                    `);
+                                }
+                            }
+                        },
+                        error: function() {
+                            alert("Errore");
+                        }
+                    });
+                }
+            }
+
+            function data2Flights(flightOffers) {
+                $("#table").html(`
+                    <div class="container text-center">
+                        <div class="col-md-4"><button id="sort_by_price">I MENO COSTOSI</button></div>
+                        <div class="col-md-4"><button id="sort_by_duration">I PI&Ugrave; VELOCI</button></div>
+                        <div class="col-md-4"><button id="sort_by_numseg">CON MENO SCAMBI</button></div>
+                    </div>
+                    <br/>
+                `);
+                
+                $("#table").append(`<p>${JSON.stringify(flightOffers[0])}</p><br/>`);
+
+                var html = '';
+                for (var i = 0; i < flightOffers.length; i++) {
+                    var flightOffer = flightOffers[i];
+                    var itineraries = flightOffers[i].itineraries;
+                    html += `<div class="list-group-item itinerario">`
+                    html += `<h4 class="list-group-item-heading" style="font-weight: bold;">`
+                    for (var j = 0; j < 1/*itineraries.length*/; j++) {
+                        var itinerary = itineraries[j];
+                        var segments = itineraries[j].segments;
+                        for (var k = 0; k < segments.length; k++) {
+                            var segment = segments[k];
+                            html += itinerary.segments[k].departure.iataCode;
+                            html += "-";
+                            html += itinerary.segments[k].arrival.iataCode;
+                            if (segments[k + 1]) {
+                                html += ", ";
+                            }
+                        }
+                        //html += ` (${itinerary.duration})`;
+                        if (itineraries[j + 1]) {
+                            html += " | ";
+                        }
+                    }
+                    html += `<b style="float: right;">${new Intl.NumberFormat('it-IT', { style: 'currency', currency: flightOffer.price.currency }).format(flightOffer.price.grandTotal)}</b></h4>`;
+                    html += `<div class="list-group-item-text">
+                                PRENOTAZIONI DISPONIBILI FINO AL <b>${flightOffer.lastTicketingDate}</b><br/>
+                                DURATA DELL'ITINERARIO: <b>${flightOffer.itineraries[0].duration}</b>
+                                <p class="details" data-target="#itinerary_modal" data-toggle="modal" id="${flightOffer.id}">VEDI I DETTAGLI</p>
+                             </div>`;
+                    html += `</div>`;
+
+                }
+                $("#table").append(html);
+
+                $("#sort_by_price").click(function() {
+                    let sorted_data = flightOffers.sort(function(a,b) {
+                        return a.price.grandTotal-b.price.grandTotal;
+                    });
+                    data2Flights(sorted_data);
+                });
+
+                $("#sort_by_duration").click(function() {
+                    let sorted_data = flightOffers.sort(function(a,b) {
+                        if(a.itineraries[0].duration > b.itineraries[0].duration) return 1;
+                        else if(a.itineraries[0].duration < b.itineraries[0].duration) return -1;
+                        else return 0;
+                    });
+                    data2Flights(sorted_data);
+                });
+
+                $("#sort_by_numseg").click(function() {
+                    let sorted_data = flightOffers.sort(function(a,b) {
+                        return a.itineraries[0].segments.length - b.itineraries[0].segments.length
+                    });
+                    data2Flights(sorted_data);
+                });
+
+                $(".details").click(function() {
+                    let data = flightOffers.filter(v=>v.id==this.id)[0];
+
+                    let origin = data.itineraries[0].segments[0].departure.iataCode;
+                    let destination = data.itineraries[0].segments[data.itineraries[0].segments.length-1].arrival.iataCode;
+
+                    origin = GADB.filter(v=>v.IATA==origin)[0];
+                    origin = origin.city+" ("+origin.country+")";
+
+                    destination = GADB.filter(v=>v.IATA==destination)[0];
+                    destination = destination.city+" ("+destination.country+")";
+
+                    let allcities = data.itineraries[0].segments.map(function(v) {
+                        city = GADB.filter(w=>w.IATA == v.departure.iataCode)[0];
+                        city = city.city+" ("+city.country+")";
+                        return city;
+                    });
+                    allcities.push(destination);
+
+                    $("#modalAnchor").html(`
+                        <div class="modal fade popup" id="itinerary_modal" role="dialog">
+                            <div class="modal-dialog modal-lg modal-dialog-centered">
+                            <div class="modal-content">  
+
+                                <div class="modal-header text-center">
+                                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                                    <h3>
+                                        <div class="fa fa-plane"></div>
+                                        ${origin}
+                                        <div class="fa fa-angle-double-right"></div>
+                                        <div class="fa fa-angle-double-right"></div>
+                                        <div class="fa fa-angle-double-right"></div> 
+                                        ${destination}
+                                        <div class="fa fa-plane"></div>
+                                    </h3>
+                                </div>
+
+                    
+                                <div class="modal-body" align="center">
+
+
+                                </div>
+                                <p>${JSON.stringify(data)}</p>
+                                <br/>
+                                <p>${JSON.stringify(allcities)}</p>
+
+                    
+                            </div>
+                            
+                            </div>
+                        </div>
+                    `);
+
+                    photosSearch(allcities);
+
+                });
+            }
 
 
         </script>    

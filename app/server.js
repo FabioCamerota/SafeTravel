@@ -8,6 +8,7 @@ const passport = require('passport');
 const FacebookStrategy = require('passport-facebook').Strategy;
 const cors = require('cors');
 const Amadeus = require('amadeus');
+const { image_search, image_search_generator } = require("duckduckgo-images-api");
 
 var app = express(); // Express configuration
 
@@ -122,23 +123,29 @@ app.get('/user_info', function(req,res) {
 	else res.redirect("https://localhost:3000/user_info");
 });
 
+app.get('/GADB', function(req,res) {
+	console.log("sent GADB");
+	res.send(GADB);
+});
+
 app.get('/mete', function(req,res) {
 	res.sendFile("mete.html",{root:__dirname});
 });
 
-app.get('/cerca_meta', function(req,res) {
+app.get('/cerca_itinerari', function(req,res) {
 	var origin = GADB.filter(v=>`${v.city} (${v.country})`==req.query.origin)[0].IATA;
 	var destination = GADB.filter(v=>`${v.city} (${v.country})`==req.query.destination)[0].IATA;
 	console.log(req.query);
 	console.log(origin+"   "+destination);
 
+	/*
 	amadeus.shopping.flightOffersSearch.get({
 		originLocationCode: origin,
 		destinationLocationCode: destination,
 		departureDate: req.query.departureDate,
 		adults: '1'
 	}).then(function(response){
-		console.log(response.data);
+		//console.log(JSON.stringify(response.data));
 		if(response.data.length == 0)
 			res.send("Nessun itinerario trovato");
 		else
@@ -147,9 +154,33 @@ app.get('/cerca_meta', function(req,res) {
 		console.log(responseError.code);
 		res.send("Errore nel server");
 	});
-	
+	return;
+	*/
+
+	//TESTING MODE:
+	var data = JSON.parse(fs.readFileSync('test_cerca_itinerari.json'));
+	console.log(data);
+	res.send(data);
 });
 
+app.get('/photo', function(req,res) {
+	
+	console.log(req.query);
+
+	let place = req.query.place;
+
+	image_search({ 
+		query: place, 
+		moderate: true 
+	}).then(function(results) {
+		console.log(results[0]);
+		res.send(results[0].image);
+	}).catch(function(err) {
+		console.log("Errore");
+		res.send("ERRORE");
+	});
+
+});
 
 
 function updateUser(profile, accessToken) {
