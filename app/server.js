@@ -349,6 +349,7 @@ https.createServer(options, app).listen(port, function() {
 
 //Priorità
 /*
+	Integrare oauth
 	Operazioni CRUD per couchdb
 	Coronatracker
 	Vedere come funzionano web socket
