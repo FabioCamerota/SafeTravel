@@ -346,3 +346,21 @@ function findOrCreateUserNOUPDATE(profile) {
 https.createServer(options, app).listen(port, function() { 
     console.log(`In ascolto sulla porta ${port}`);
 });
+
+function createCRUD(db,obj) {
+//	var id = obj.id...
+	//...
+}
+
+//https://www.facebook.com/dialog/share?app_id=310503350806055&display=popup&href=https://travelfree.altervista.org/&quote=TEST, vota qui: https://locahost:3000/mete
+
+//API TERZI
+/*
+	Tutti itinerari salvati
+	Più scelte, salvate più volte, con dati covid solo destinazione finale
+	Itinerari:
+		Relativa a una specifica destinazione
+		Relativa a una specifica città di partenza
+		Entrambi
+	Itinerari ordinati con meno casi attivi
+*/
