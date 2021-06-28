@@ -347,6 +347,13 @@ https.createServer(options, app).listen(port, function() {
     console.log(`In ascolto sulla porta ${port}`);
 });
 
+//Priorità
+/*
+	Operazioni CRUD per couchdb
+	Coronatracker
+	Vedere come funzionano web socket
+*/
+
 function createCRUD(db,obj) {
 //	var id = obj.id...
 	//...
