@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+    <header>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Home</title>
+        
+        <!--JQUERY-->
+        <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+
+        <!--BOOSTRAP-->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+
+        <!--FONT AWESOME-->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+        
+        <!--STILI PERSONALIZZATI-->
+        <style>
+            .loader {
+                position: relative;
+                display: block;
+                margin-left: auto;
+                margin-right: auto;
+
+                border: 16px solid #f3f3f3;
+                border-radius: 50%;
+                border-top: 16px solid #3498db;
+                width: 120px;
+                height: 120px;
+                animation: spin 2s linear infinite;
+            }
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+            .modal-photo {
+                width: 300px;
+                height: 300px;
+                display: inline-block; /* or you could float them */
+                overflow: hidden;
+                background-size: cover;
+                border-radius: 50%;
+            }
+            .fa-angle-double-down {
+                font-size: 50px !important;
+            }
+        </style>
+    </header>
+    <body onload="caricaItinerario()">
+        
+        <div id="itinerario">dsa</div>
+
+        <script>
+
+            var GADB;
+
+            $.ajax({
+                type: "GET",
+                url: "https://localhost:3000/GADB",
+                success: function (data) {
+                    GADB = data;
+                    arr = data.filter(v=>v.IATA!=`N/A`)
+                        .map(v=>`${v.city} (${v.country})`)
+                        .filter((v, i, a) => a.indexOf(v) === i)
+                        .sort();
+                    for(let i = 0; i < arr.length; i++) {
+                        if(arr[i] == undefined) continue;
+                        var city = arr[i];
+                        $("#suggestions").append(`<option value="${city}">`);
+                    }
+                },
+                error: function() {
+                    alert("Errore");
+                }
+            });
+
+            function caricaItinerario() {
+                $("#itinerario").html(`<div class="loader"></div>`);
+                $.ajax({
+                    type: "GET",
+                    url: "https://localhost:3000/meta_dettagli_data"+window.location.search,
+                    success: function (d) {
+                        data = JSON.parse(d);
+                        let origin = data.itineraries[0].segments[0].departure.iataCode;
+                        let destination = data.itineraries[0].segments[data.itineraries[0].segments.length-1].arrival.iataCode;
+
+                        origin = GADB.filter(v=>v.IATA==origin)[0];
+                        origin = origin.city+" ("+origin.country+")";
+
+                        destination = GADB.filter(v=>v.IATA==destination)[0];
+                        destination = destination.city+" ("+destination.country+")";
+
+                        let allcities = data.itineraries[0].segments.map(function(v) {
+                            city = GADB.filter(w=>w.IATA == v.departure.iataCode)[0];
+                            city = city.city+" ("+city.country+")";
+                            return city;
+                        });
+                        allcities.push(destination);
+
+                        $("#itinerario").html(`
+
+                            <div class="text-center">
+                                <h2><b>
+                                    <div class="fa fa-plane"></div>
+                                    ${origin}
+                                    <div class="fa fa-angle-double-right"></div>
+                                    <div class="fa fa-angle-double-right"></div>
+                                    <div class="fa fa-angle-double-right"></div> 
+                                    ${destination}
+                                    <div class="fa fa-plane"></div>
+                                </b></h2>
+                                <h3>PREZZO: ${new Intl.NumberFormat('it-IT', { style: 'currency', currency: data.price.currency }).format(data.price.grandTotal)}</h3>
+                                <h3>PRENOTAZIONI DISPONIBILI FINO AL <b>${data.lastTicketingDate}</b></h3>
+                                <h3>DURATA DELL'ITINERARIO: <b>${data.itineraries[0].duration}</b></h3>
+                            </div>
+
+
+                            <div class="content-photos" align="center"></div>
+                            <div class="content-airline" align="center"></div>
+
+                            <p>${JSON.stringify(data)}</p>
+                            <br/>
+                            <p>${JSON.stringify(allcities)}</p>
+                        `);
+
+                        $("#table").append(`${JSON.stringify(data)}`);
+
+                        photosSearch(allcities);
+                        airlineSearch(data.validatingAirlineCodes[0]);
+                    },
+                    error: function() {
+                        alert("Errore");
+                    }
+                });
+            }
+
+            function photosSearch(allcities) {
+                $("#itinerario .content-photos").html(`<div class="loader"></div>`);
+                var ris = [];
+                for(let i = 0; i < allcities.length; i++) {
+                    $.ajax({
+                        type: "GET",
+                        url: `https://localhost:3000/photo?place=${allcities[i]}`,
+                        success: function(data) {
+                            ris.push({
+                                "num": i,
+                                "url": data
+                            });
+                            if(ris.length == allcities.length) {
+                                $("#itinerario .content-photos").html("");
+                                ris = ris.sort(function(a, b) {
+                                    return a.num-b.num;
+                                });
+
+                                for(let j = 0; j < ris.length; j++) {
+                                    $("#itinerario .content-photos").append(`
+                                        <div class="modal-photo" style="background-image: url('${ris[j].url}')"></div>
+                                        <br/>
+                                        <p><b>${allcities[j]}</b></p>
+                                        <div class="fa fa-angle-double-down"></div>
+                                        <br/>
+                                    `);
+                                }
+                            }
+                        },
+                        error: function() {
+                            alert("Errore");
+                        }
+                    });
+                }
+            }
+
+            function airlineSearch(code) {
+                $("#itinerario .content-airline").html(`<div class="loader"></div>`);
+                
+                $.ajax({
+                    type: "GET",
+                    url: `https://localhost:3000/airline_data?code=${code}`,
+                    success: function(data) {
+                        $("#itinerario .content-airline").html("");
+                        $("#itinerario .content-airline").append(`
+                            <p>ITINERARIO GESTITO DA ${data.airline[0].businessName} <a href="${data.urls.filter(v=>v.channel=="Web" || v.channel=="All")[0].href}" target="_blank">CLICCA QUI PER PRENOTARE!</a></p>
+                        `);
+
+
+                        $.ajax({
+                            type: "GET",
+                            url: `https://localhost:3000/photo?place=${data.airline[0].businessName} company logo render`,
+                            success: function(data) {
+                                $("#itinerario .content-airline").append(`
+                                    <img width="150px" src=${data}>
+                                `);
+                            },
+                            error: function() {
+                                alert("Errore");
+                            }
+                        });
+                    },
+                    error: function() {
+                        alert("Errore");
+                    }
+                });
+                
+            }
+
+
+        </script>    
+    </body>
+</html>

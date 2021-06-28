@@ -78,7 +78,7 @@
         </form>
 
         
-        <div id="table">dsa</div>
+        <div id="table"></div>
         <div id="modalAnchor"></div>
 
         <script>
@@ -120,88 +120,65 @@
                         data2Flights(JSON.parse(e.target.responseText));
                     }
                 }
-		    	httpRequest.open("GET",`https://localhost:3000/cerca_itinerari?origin=${document.mainform.origin.value.replaceAll(" ","%20")}&destination=${document.mainform.destination.value.replaceAll(" ","%20")}&departureDate=${document.mainform.departureDate.value}`,true);
+
+                var origin = GADB.filter(v=>`${v.city} (${v.country})`==document.mainform.origin.value)[0].IATA;
+                var destination = GADB.filter(v=>`${v.city} (${v.country})`==document.mainform.destination.value)[0].IATA;
+
+		    	httpRequest.open("GET",`https://localhost:3000/cerca_itinerari?origin=${origin}&destination=${destination}&departureDate=${document.mainform.departureDate.value}`,true);
 	    		httpRequest.send();
             });
 
-            function photosSearch(allcities) {
-                $("#itinerary_modal .modal-content .modal-body").html(`<div class="loader"></div>`);
-                var ris = [];
-                for(let i = 0; i < allcities.length; i++) {
-                    $.ajax({
-                        type: "GET",
-                        url: `https://localhost:3000/photo?place=${allcities[i]}`,
-                        success: function(data) {
-                            ris.push({
-                                "num": i,
-                                "url": data
-                            });
-                            if(ris.length == allcities.length) {
-                                $("#itinerary_modal .modal-content .modal-body").html("");
-                                ris = ris.sort(function(a, b) {
-                                    return a.num-b.num;
-                                });
-
-                                for(let j = 0; j < ris.length; j++) {
-                                    $("#itinerary_modal .modal-content .modal-body").append(`
-                                        <div class="modal-photo" style="background-image: url('${ris[j].url}')"></div>
-                                        <br/>
-                                        <p>${allcities[j]}</p>
-                                        <div class="fa fa-angle-double-down"></div>
-                                        <br/>
-                                    `);
-                                }
-                            }
-                        },
-                        error: function() {
-                            alert("Errore");
-                        }
-                    });
-                }
-            }
 
             function data2Flights(flightOffers) {
                 $("#table").html(`
                     <div class="container text-center">
                         <div class="col-md-4"><button id="sort_by_price">I MENO COSTOSI</button></div>
                         <div class="col-md-4"><button id="sort_by_duration">I PI&Ugrave; VELOCI</button></div>
-                        <div class="col-md-4"><button id="sort_by_numseg">CON MENO SCAMBI</button></div>
+                        <div class="col-md-4"><button id="sort_by_numseg">CON POCHI SCALI</button></div>
                     </div>
                     <br/>
                 `);
                 
-                $("#table").append(`<p>${JSON.stringify(flightOffers[0])}</p><br/>`);
+//                $("#table").append(`<p>${JSON.stringify(flightOffers[0])}</p><br/>`);
 
-                var html = '';
+                var html = ''; var flightOfferId = ''; var origin = ' '; var destination = ' '; var departureDate = ' ';
                 for (var i = 0; i < flightOffers.length; i++) {
                     var flightOffer = flightOffers[i];
-                    var itineraries = flightOffers[i].itineraries;
+                    var itineraries = flightOffer.itineraries;
                     html += `<div class="list-group-item itinerario">`
                     html += `<h4 class="list-group-item-heading" style="font-weight: bold;">`
                     for (var j = 0; j < 1/*itineraries.length*/; j++) {
                         var itinerary = itineraries[j];
-                        var segments = itineraries[j].segments;
+                        var segments = itinerary.segments;
                         for (var k = 0; k < segments.length; k++) {
                             var segment = segments[k];
-                            html += itinerary.segments[k].departure.iataCode;
+                            html += segment.departure.iataCode;
                             html += "-";
-                            html += itinerary.segments[k].arrival.iataCode;
+                            html += segment.arrival.iataCode;
                             if (segments[k + 1]) {
                                 html += ", ";
                             }
                         }
+                        origin = itinerary.segments[0].departure.iataCode;
+                        destination = itinerary.segments[itinerary.segments.length-1].arrival.iataCode;
+                        departureDate = itinerary.segments[0].departure.at.split("T")[0];
+                        flightOfferId += itinerary.segments[0].departure.iataCode+"_"+itinerary.segments[itinerary.segments.length-1].arrival.iataCode;
+                        flightOfferId += itinerary.segments[0].departure.at;
                         //html += ` (${itinerary.duration})`;
                         if (itineraries[j + 1]) {
                             html += " | ";
                         }
                     }
+
                     html += `<b style="float: right;">${new Intl.NumberFormat('it-IT', { style: 'currency', currency: flightOffer.price.currency }).format(flightOffer.price.grandTotal)}</b></h4>`;
                     html += `<div class="list-group-item-text">
                                 PRENOTAZIONI DISPONIBILI FINO AL <b>${flightOffer.lastTicketingDate}</b><br/>
                                 DURATA DELL'ITINERARIO: <b>${flightOffer.itineraries[0].duration}</b>
-                                <p class="details" data-target="#itinerary_modal" data-toggle="modal" id="${flightOffer.id}">VEDI I DETTAGLI</p>
+                                <a class="details" href="https://localhost:3000/meta_dettagli?origin=${origin}&destination=${destination}&departureDate=${departureDate}&prezzo=${flightOffer.price.grandTotal}&durata=${flightOffer.itineraries[0].duration}&disponib=${flightOffer.lastTicketingDate}" target="_blank">VEDI I DETTAGLI</a>
                              </div>`;
                     html += `</div>`;
+//                    <p class="details" data-target="#itinerary_modal" data-toggle="modal" id="${flightOffer.id}">VEDI I DETTAGLI</p>
+
 
                 }
                 $("#table").append(html);
@@ -224,66 +201,9 @@
 
                 $("#sort_by_numseg").click(function() {
                     let sorted_data = flightOffers.sort(function(a,b) {
-                        return a.itineraries[0].segments.length - b.itineraries[0].segments.length
+                        return a.itineraries[0].segments.length - b.itineraries[0].segments.length;
                     });
                     data2Flights(sorted_data);
-                });
-
-                $(".details").click(function() {
-                    let data = flightOffers.filter(v=>v.id==this.id)[0];
-
-                    let origin = data.itineraries[0].segments[0].departure.iataCode;
-                    let destination = data.itineraries[0].segments[data.itineraries[0].segments.length-1].arrival.iataCode;
-
-                    origin = GADB.filter(v=>v.IATA==origin)[0];
-                    origin = origin.city+" ("+origin.country+")";
-
-                    destination = GADB.filter(v=>v.IATA==destination)[0];
-                    destination = destination.city+" ("+destination.country+")";
-
-                    let allcities = data.itineraries[0].segments.map(function(v) {
-                        city = GADB.filter(w=>w.IATA == v.departure.iataCode)[0];
-                        city = city.city+" ("+city.country+")";
-                        return city;
-                    });
-                    allcities.push(destination);
-
-                    $("#modalAnchor").html(`
-                        <div class="modal fade popup" id="itinerary_modal" role="dialog">
-                            <div class="modal-dialog modal-lg modal-dialog-centered">
-                            <div class="modal-content">  
-
-                                <div class="modal-header text-center">
-                                    <button type="button" class="close" data-dismiss="modal">&times;</button>
-                                    <h3>
-                                        <div class="fa fa-plane"></div>
-                                        ${origin}
-                                        <div class="fa fa-angle-double-right"></div>
-                                        <div class="fa fa-angle-double-right"></div>
-                                        <div class="fa fa-angle-double-right"></div> 
-                                        ${destination}
-                                        <div class="fa fa-plane"></div>
-                                    </h3>
-                                </div>
-
-                    
-                                <div class="modal-body" align="center">
-
-
-                                </div>
-                                <p>${JSON.stringify(data)}</p>
-                                <br/>
-                                <p>${JSON.stringify(allcities)}</p>
-
-                    
-                            </div>
-                            
-                            </div>
-                        </div>
-                    `);
-
-                    photosSearch(allcities);
-
                 });
             }
 

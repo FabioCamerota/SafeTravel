@@ -9,6 +9,7 @@ const FacebookStrategy = require('passport-facebook').Strategy;
 const cors = require('cors');
 const Amadeus = require('amadeus');
 const { image_search, image_search_generator } = require("duckduckgo-images-api");
+const { response } = require('express');
 
 var app = express(); // Express configuration
 
@@ -133,19 +134,9 @@ app.get('/mete', function(req,res) {
 });
 
 app.get('/cerca_itinerari', function(req,res) {
-	var origin = GADB.filter(v=>`${v.city} (${v.country})`==req.query.origin)[0].IATA;
-	var destination = GADB.filter(v=>`${v.city} (${v.country})`==req.query.destination)[0].IATA;
 	console.log(req.query);
-	console.log(origin+"   "+destination);
 
-	/*
-	amadeus.shopping.flightOffersSearch.get({
-		originLocationCode: origin,
-		destinationLocationCode: destination,
-		departureDate: req.query.departureDate,
-		adults: '1'
-	}).then(function(response){
-		//console.log(JSON.stringify(response.data));
+	cercaItinerari(req.query.origin,req.query.destination,req.query.departureDate).then(function(response){
 		if(response.data.length == 0)
 			res.send("Nessun itinerario trovato");
 		else
@@ -154,34 +145,97 @@ app.get('/cerca_itinerari', function(req,res) {
 		console.log(responseError.code);
 		res.send("Errore nel server");
 	});
-	return;
-	*/
 
-	//TESTING MODE:
-	var data = JSON.parse(fs.readFileSync('test_cerca_itinerari.json'));
-	console.log(data);
-	res.send(data);
+});
+
+app.get('/meta_dettagli', function(req,res) {
+	res.sendFile("meta_dettagli.html",{root:__dirname});
+});
+
+app.get('/meta_dettagli_data', function(req,res) {
+	console.log(req.query);
+
+	cercaItinerari(req.query.origin,req.query.destination,req.query.departureDate).then(function(response){
+		if(response.data.length == 0)
+			res.send("Nessun itinerario trovato");
+		else {
+			let itinerario = response.data.filter(function(v) {
+				return v.itineraries[0].duration == req.query.durata &&
+				v.lastTicketingDate == req.query.disponib &&
+				v.price.grandTotal == req.query.prezzo;
+			})[0];
+			res.send(JSON.stringify(itinerario));
+		}
+	}).catch(function(responseError){
+		console.log(responseError.code);
+		res.send("Errore nel server");
+	});
 });
 
 app.get('/photo', function(req,res) {
-	
 	console.log(req.query);
-
 	let place = req.query.place;
-
 	image_search({ 
 		query: place, 
 		moderate: true 
 	}).then(function(results) {
-		console.log(results[0]);
-		res.send(results[0].image);
+//		console.log(results[0]);
+		for(let i = 0; i < results.length; i++) {
+			if(results[i].image.includes("https:")) {
+				res.send(results[i].image);
+				break;
+			}
+		}
 	}).catch(function(err) {
 		console.log("Errore");
 		res.send("ERRORE");
 	});
-
 });
 
+app.get('/airline_data', function(req,res) {
+	var code = req.query.code;
+	console.log(code);
+	/*
+	amadeus.referenceData.airlines.get({
+		airlineCodes : code
+	}).then(function(response0){
+		amadeus.referenceData.urls.checkinLinks.get({
+			airlineCode : code
+		}).then(function(response1){
+			var obj = {"airline": response0.data, "urls": response1.data};
+			console.log(JSON.stringify(obj));
+			res.send(obj);
+		}).catch(function(response1Error){
+			console.log(responseError);
+			res.send(responseError);
+		});
+	}).catch(function(response0Error){
+		res.send(response0Error);
+	});
+	*/
+	//TESTING MODE:
+	var data = JSON.parse(fs.readFileSync('test_airline_data.json'));
+	console.log(data);
+	res.send(data);
+});
+
+function cercaItinerari(origin, destination, departureDate) {
+	/*return amadeus.shopping.flightOffersSearch.get({
+			originLocationCode: origin,
+			destinationLocationCode: destination,
+			departureDate: departureDate,
+			adults: '1'
+		});*/
+	
+	//TESTING MODE:
+	var data = JSON.parse(fs.readFileSync('test_cerca_itinerari.json'));
+	return new Promise(function(resolve,reject) {
+		if(data.length > 0)
+			resolve({"data": data});
+		else
+			reject("NONONO");
+	});
+}
 
 function updateUser(profile, accessToken) {
 	return new Promise(function(resolve, reject){

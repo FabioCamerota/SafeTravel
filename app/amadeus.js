@@ -32,7 +32,7 @@ amadeus.shopping.flightOffersSearch.get({
 
 
 amadeus.referenceData.urls.checkinLinks.get({
-    airlineCode : 'LH'
+    airlineCode : 'QR'
 }).then(function(response){
     console.log(response.data);
 }).catch(function(responseError){
@@ -41,7 +41,7 @@ amadeus.referenceData.urls.checkinLinks.get({
 
 
 amadeus.referenceData.airlines.get({
-    airlineCodes : 'LH'
+    airlineCodes : 'QR'
 }).then(function(response){
     console.log(response.data);
 }).catch(function(responseError){
