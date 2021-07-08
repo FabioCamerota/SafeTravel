@@ -374,11 +374,28 @@ app.get('/testcreateCRUD', function(req,res) {
 	});
 });
 
-app.get('/testupdateCRUD', function(req,res) {
+app.get('/testreadCRUD', function(req,res) {
 	//INSERISCO NEL SEGUENTE DATABASE: http://admin:admin@couchdb:5984/users/
 	var obj = {
 		"id": 1213123,
 		"token": "tokentest",
+		"nome": "NOME",
+		"mete": []
+	};
+	readCRUD('http://admin:admin@couchdb:5984/users/',obj).then(function(response) {
+		console.log(response);
+		res.send(response);
+	}).catch(function(err) {
+		console.log(err);
+		res.send(err);
+	});
+});
+
+app.get('/testupdateCRUD', function(req,res) {
+	//INSERISCO NEL SEGUENTE DATABASE: http://admin:admin@couchdb:5984/users/
+	var obj = {
+		"id": 1213123,
+		"token": "tokentest MODIFICATO UPDATATO",
 		"nome": "NOME",
 		"mete": []
 	};
@@ -408,22 +425,7 @@ app.get('/testdeleteCRUD', function(req,res) {
 	});
 });
 
-app.get('/testreadCRUD', function(req,res) {
-	//INSERISCO NEL SEGUENTE DATABASE: http://admin:admin@couchdb:5984/users/
-	var obj = {
-		"id": 1213123,
-		"token": "tokentest",
-		"nome": "NOME",
-		"mete": []
-	};
-	readCRUD('http://admin:admin@couchdb:5984/users/',obj).then(function(response) {
-		console.log(response);
-		res.send(response);
-	}).catch(function(err) {
-		console.log(err);
-		res.send(err);
-	});
-});
+
 
 function createCRUD(db,obj) {
 	return new Promise(function(resolve, reject){
@@ -450,77 +452,60 @@ function createCRUD(db,obj) {
 	});
 }
 
-function updateCRUD(db,obj) {
+function readCRUD(db,obj) {
 	return new Promise(function(resolve, reject){
 		request({//url specificato con nome dal docker compose e non localhost
-			url: db+obj.id,
-			headers: {'content-type': 'application/json'}, 
-			method: 'PUT',
-			body: JSON.stringify(obj)
+			url: db+obj.id, 
+			method: 'GET',
 		}, function(error, res, body){
-			if(res.statusCode == 201) { //INSERITO
-				resolve(obj);
-			}else if(res.statusCode == 409){
-				console.log(error);
-				console.log(res.statusCode, body);
-				reject("Elemento già presente");
-			}
-			else {
-				console.log(error);
-				console.log(res.statusCode, body);
-				reject("Errore, codice: "+res.statusCode);
+			if(error) reject(error);
+			else if(res.statusCode != 200) reject(JSON.parse(body).error)
+			else{
+				var oggetto = {};
+				oggetto.campo = JSON.parse(body);
+				resolve(oggetto);
 			}
 		});
+	});
+}
+
+function updateCRUD(db,obj) {
+	return new Promise(function(resolve, reject){
+		readCRUD(db,obj).then(function(result){ //prelevo i dati
+		obj["_rev"] = result.campo._rev;	//aggiungo il _rev a obj per poter fare l'update (altrimenti da errore in accesso)
+		request({//url specificato con nome dal docker compose e non localhost
+			url: db+obj.id,
+			method: 'PUT',
+			body: JSON.stringify(obj), 
+		}, function(error, res){
+			if(error) {reject(error);}
+			else if(res.statusCode!=201){reject(res.statusCode);}
+			else {
+				resolve(true);
+				}
+			});
+		})
 	});
 }
 
 function deleteCRUD(db,obj) {
 	return new Promise(function(resolve, reject){
+		readCRUD(db,obj).then(function(result){ //prelevo i dati
+
 		request({//url specificato con nome dal docker compose e non localhost
-			url: db+obj.id,
-			headers: {'content-type': 'application/json'}, 
-			method: 'PUT',
-			body: JSON.stringify(obj)
-		}, function(error, res, body){
-			if(res.statusCode == 201) { //INSERITO
-				resolve(obj);
-			}else if(res.statusCode == 409){
-				console.log(error);
-				console.log(res.statusCode, body);
-				reject("Elemento già presente");
-			}
+			url: db+obj.id+"?rev="+result.campo._rev,
+			method: 'DELETE',
+		}, function(error, res){
+			if(error) {reject(error);}
+			else if(res.statusCode!=200){reject(false);}
 			else {
-				console.log(error);
-				console.log(res.statusCode, body);
-				reject("Errore, codice: "+res.statusCode);
-			}
-		});
+				resolve(true);
+				}
+			});
+		})
 	});
 }
 
-function readCRUD(db,obj) {
-	return new Promise(function(resolve, reject){
-		request({//url specificato con nome dal docker compose e non localhost
-			url: db+obj.id,
-			headers: {'content-type': 'application/json'}, 
-			method: 'PUT',
-			body: JSON.stringify(obj)
-		}, function(error, res, body){
-			if(res.statusCode == 201) { //INSERITO
-				resolve(obj);
-			}else if(res.statusCode == 409){
-				console.log(error);
-				console.log(res.statusCode, body);
-				reject("Elemento già presente");
-			}
-			else {
-				console.log(error);
-				console.log(res.statusCode, body);
-				reject("Errore, codice: "+res.statusCode);
-			}
-		});
-	});
-}
 
 //https://www.facebook.com/dialog/share?app_id=310503350806055&display=popup&href=https://travelfree.altervista.org/&quote=TEST, vota qui: https://locahost:3000/mete
 
