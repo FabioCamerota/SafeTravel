@@ -356,7 +356,7 @@ https.createServer(options, app).listen(port, function() {
 */
 
 //'http://admin:admin@couchdb:5984/users/'
-
+//COUCHDB: http://127.0.0.1:5984/_utils/#login
 app.get('/testcreateCRUD', function(req,res) {
 	//INSERISCO NEL SEGUENTE DATABASE: http://admin:admin@couchdb:5984/users/
 	var obj = {
@@ -366,6 +366,57 @@ app.get('/testcreateCRUD', function(req,res) {
 		"mete": []
 	};
 	createCRUD('http://admin:admin@couchdb:5984/users/',obj).then(function(response) {
+		console.log(response);
+		res.send(response);
+	}).catch(function(err) {
+		console.log(err);
+		res.send(err);
+	});
+});
+
+app.get('/testupdateCRUD', function(req,res) {
+	//INSERISCO NEL SEGUENTE DATABASE: http://admin:admin@couchdb:5984/users/
+	var obj = {
+		"id": 1213123,
+		"token": "tokentest",
+		"nome": "NOME",
+		"mete": []
+	};
+	updateCRUD('http://admin:admin@couchdb:5984/users/',obj).then(function(response) {
+		console.log(response);
+		res.send(response);
+	}).catch(function(err) {
+		console.log(err);
+		res.send(err);
+	});
+});
+
+app.get('/testdeleteCRUD', function(req,res) {
+	//INSERISCO NEL SEGUENTE DATABASE: http://admin:admin@couchdb:5984/users/
+	var obj = {
+		"id": 1213123,
+		"token": "tokentest",
+		"nome": "NOME",
+		"mete": []
+	};
+	deleteCRUD('http://admin:admin@couchdb:5984/users/',obj).then(function(response) {
+		console.log(response);
+		res.send(response);
+	}).catch(function(err) {
+		console.log(err);
+		res.send(err);
+	});
+});
+
+app.get('/testreadCRUD', function(req,res) {
+	//INSERISCO NEL SEGUENTE DATABASE: http://admin:admin@couchdb:5984/users/
+	var obj = {
+		"id": 1213123,
+		"token": "tokentest",
+		"nome": "NOME",
+		"mete": []
+	};
+	readCRUD('http://admin:admin@couchdb:5984/users/',obj).then(function(response) {
 		console.log(response);
 		res.send(response);
 	}).catch(function(err) {
@@ -384,6 +435,83 @@ function createCRUD(db,obj) {
 		}, function(error, res, body){
 			if(res.statusCode == 201) { //INSERITO
 				resolve(obj);
+			}else if(res.statusCode == 409){//Elemento già presente
+				console.log(error);
+				console.log(res.statusCode, body);
+				reject("Elemento già presente");
+				updateCRUD(db,obj);
+			}
+			else {
+				console.log(error);
+				console.log(res.statusCode, body);
+				reject("Errore, codice: "+res.statusCode);
+			}
+		});
+	});
+}
+
+function updateCRUD(db,obj) {
+	return new Promise(function(resolve, reject){
+		request({//url specificato con nome dal docker compose e non localhost
+			url: db+obj.id,
+			headers: {'content-type': 'application/json'}, 
+			method: 'PUT',
+			body: JSON.stringify(obj)
+		}, function(error, res, body){
+			if(res.statusCode == 201) { //INSERITO
+				resolve(obj);
+			}else if(res.statusCode == 409){
+				console.log(error);
+				console.log(res.statusCode, body);
+				reject("Elemento già presente");
+			}
+			else {
+				console.log(error);
+				console.log(res.statusCode, body);
+				reject("Errore, codice: "+res.statusCode);
+			}
+		});
+	});
+}
+
+function deleteCRUD(db,obj) {
+	return new Promise(function(resolve, reject){
+		request({//url specificato con nome dal docker compose e non localhost
+			url: db+obj.id,
+			headers: {'content-type': 'application/json'}, 
+			method: 'PUT',
+			body: JSON.stringify(obj)
+		}, function(error, res, body){
+			if(res.statusCode == 201) { //INSERITO
+				resolve(obj);
+			}else if(res.statusCode == 409){
+				console.log(error);
+				console.log(res.statusCode, body);
+				reject("Elemento già presente");
+			}
+			else {
+				console.log(error);
+				console.log(res.statusCode, body);
+				reject("Errore, codice: "+res.statusCode);
+			}
+		});
+	});
+}
+
+function readCRUD(db,obj) {
+	return new Promise(function(resolve, reject){
+		request({//url specificato con nome dal docker compose e non localhost
+			url: db+obj.id,
+			headers: {'content-type': 'application/json'}, 
+			method: 'PUT',
+			body: JSON.stringify(obj)
+		}, function(error, res, body){
+			if(res.statusCode == 201) { //INSERITO
+				resolve(obj);
+			}else if(res.statusCode == 409){
+				console.log(error);
+				console.log(res.statusCode, body);
+				reject("Elemento già presente");
 			}
 			else {
 				console.log(error);
