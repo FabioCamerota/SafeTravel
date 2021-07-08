@@ -355,9 +355,43 @@ https.createServer(options, app).listen(port, function() {
 	Vedere come funzionano web socket
 */
 
+//'http://admin:admin@couchdb:5984/users/'
+
+app.get('/testcreateCRUD', function(req,res) {
+	//INSERISCO NEL SEGUENTE DATABASE: http://admin:admin@couchdb:5984/users/
+	var obj = {
+		"id": 1213123,
+		"token": "tokentest",
+		"nome": "NOME",
+		"mete": []
+	};
+	createCRUD('http://admin:admin@couchdb:5984/users/',obj).then(function(response) {
+		console.log(response);
+		res.send(response);
+	}).catch(function(err) {
+		console.log(err);
+		res.send(err);
+	});
+});
+
 function createCRUD(db,obj) {
-//	var id = obj.id...
-	//...
+	return new Promise(function(resolve, reject){
+		request({//url specificato con nome dal docker compose e non localhost
+			url: db+obj.id,
+			headers: {'content-type': 'application/json'}, 
+			method: 'PUT',
+			body: JSON.stringify(obj)
+		}, function(error, res, body){
+			if(res.statusCode == 201) { //INSERITO
+				resolve(obj);
+			}
+			else {
+				console.log(error);
+				console.log(res.statusCode, body);
+				reject("Errore, codice: "+res.statusCode);
+			}
+		});
+	});
 }
 
 //https://www.facebook.com/dialog/share?app_id=310503350806055&display=popup&href=https://travelfree.altervista.org/&quote=TEST, vota qui: https://locahost:3000/mete

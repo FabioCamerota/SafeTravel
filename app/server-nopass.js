@@ -35,6 +35,7 @@ app.get('/', function(req,res) {
 });
 
 app.get('/login', function(req,res) {
+	console.log("hoh");
 	res.redirect(`https://www.facebook.com/v10.0/dialog/oauth?response_type=code&scope=email&client_id=${client_id}&redirect_uri=https://localhost:3000/home&client_secret=${client_secret}`);
 });
 
