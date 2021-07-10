@@ -7,48 +7,59 @@
         <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
     </header>
     <body>
-        <p>
-            Result :<output name="" type="text" id="result" value"readonly"></output>
-        </p>
-        <input type="text" onchange="ws.send(this.value);">
-        <a href="https://localhost:3000/login">
-            <button id="login">login</button>
+        <a href="https://localhost:3000/user_info">
+            <button>user info</button>
         </a>
-        <a href="https://localhost:3000/logout">
-            <button id="logout">logout</button>
+        <a href="https://localhost:3000/home">
+            <button>change page (to home)</button>
         </a>
+        <div></div>
+
         <script>
-            if("WebSocket" in window){
-                var ws = new WebSocket("wss://localhost:3000/");
-                ws.onmessage=function(event){
-                    document.getElementById("result").value=event.data;
+
+            $("#test2").click(function() {
+			    var httpRequest = new XMLHttpRequest();
+			    httpRequest.onreadystatechange = function(e) {
+                    if (e.target.readyState == XMLHttpRequest.DONE){
+                        $("div").append(`e.target.responseText)`);
+                    }
                 }
-            }else{
-               // The browser doesn't support WebSocket
-               alert("WebSocket NOT supported by your Browser!");
+		    	httpRequest.open("GET",`https://localhost:3000/user_info`,true);
+	    		httpRequest.send();
+            });
+
+            /*
+            const params = new URLSearchParams(document.location.search);
+            const code = params.get("code");
+            const my_url = "http://localhost:3000";
+
+            $("#test2").click(function() {
+			    var httpRequest = new XMLHttpRequest();
+			    httpRequest.onreadystatechange = function(e) {
+                    if (e.target.readyState == XMLHttpRequest.DONE){
+                        $("p").append(e.target.responseText);
+                    }
+                }
+		    	httpRequest.open("GET",`https://localhost:3001/token?code=${code}`,true);
+	    		httpRequest.send();
+            });
+
+            $("#test").click(caricaUtente);
+
+
+            function caricaUtente(e) {
+			    var httpRequest = new XMLHttpRequest();
+			    httpRequest.onreadystatechange = utente;
+		    	httpRequest.open("GET",`https://localhost:3001/test?req_url=${my_url}`,true);
+	    		httpRequest.send();
+    		}
+            function utente(e) {
+                if (e.target.readyState == XMLHttpRequest.DONE){
+                    //window.location = e.target.responseText;
+                    $("p").append(e.target.responseText);
+                }
             }
-            $("#login").click(function() {
-			    var httpRequest = new XMLHttpRequest();
-			    httpRequest.onreadystatechange = function(e) {
-                    if (e.target.readyState == XMLHttpRequest.DONE){
-                        $("div").html(`<p>${e.target.responseText}</p>`)
-                    }
-                }
-		    	httpRequest.open("GET",`https://localhost:3000/login`,true);
-	    		httpRequest.send();
-            });
-
-            $("#logout").click(function() {
-			    var httpRequest = new XMLHttpRequest();
-			    httpRequest.onreadystatechange = function(e) {
-                    if (e.target.readyState == XMLHttpRequest.DONE){
-                        $("div").html(`<p>${e.target.responseText}</p>`)
-                    }
-                }
-		    	httpRequest.open("GET",`https://localhost:3000/logout`,true);
-	    		httpRequest.send();
-            });
-
+            */
         </script>    
     </body>
 </html>

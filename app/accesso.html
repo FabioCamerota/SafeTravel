@@ -7,53 +7,48 @@
         <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
     </header>
     <body>
-        <button id="test">test</button>
-        <button id="test2">test2</button>
-        <a href="https://localhost:3000/auth_req">
-            <button  type="button">
-                <p>Accedi con Youtube&nbsp</p>
-                <img src="https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fleejuan.com%2Fwp-content%2Fuploads%2F2020%2F05%2Fpng-transparent-youtube-logo-youtube-red-logo-sunny-leone-angle-rectangle-brand.png&f=1&nofb=1" width="30px" height="30px">
-            </button>
+        <p>
+            Result :<output name="" type="text" id="result" value"readonly"></output>
+        </p>
+        <input type="text" onchange="ws.send(this.value);">
+        <a href="https://localhost:3000/login">
+            <button id="login">login</button>
         </a>
-        <div></div>
-
+        <a href="https://localhost:3000/logout">
+            <button id="logout">logout</button>
+        </a>
         <script>
-            const params = new URLSearchParams(document.location.search);
-            const code = params.get("code");
-            const my_url = "http://localhost:3000/accesso";
-
-            $("#test2").click(function() {
+            if("WebSocket" in window){
+                var ws = new WebSocket("wss://localhost:3000/");
+                ws.onmessage=function(event){
+                    document.getElementById("result").value=event.data;
+                }
+            }else{
+               // The browser doesn't support WebSocket
+               alert("WebSocket NOT supported by your Browser!");
+            }
+            $("#login").click(function() {
 			    var httpRequest = new XMLHttpRequest();
 			    httpRequest.onreadystatechange = function(e) {
                     if (e.target.readyState == XMLHttpRequest.DONE){
-                        videos = JSON.parse(e.target.responseText).items;
-                        for(let i = 0; i < videos.length; i++) {
-                            $("div").append(`
-                                <iframe src="https://www.youtube-nocookie.com/embed/${videos[i].id}" frameborder="0" allow="accelerometer; encrypted-media; gyroscope" allowfullscreen></iframe>
-                            `);
-                        }
-
+                        $("div").html(`<p>${e.target.responseText}</p>`)
                     }
                 }
-		    	httpRequest.open("GET",`https://localhost:3000/liked_videos`,true);
+		    	httpRequest.open("GET",`https://localhost:3000/login`,true);
 	    		httpRequest.send();
             });
 
-            $("#test").click(caricaUtente);
-
-
-            function caricaUtente(e) {
+            $("#logout").click(function() {
 			    var httpRequest = new XMLHttpRequest();
-			    httpRequest.onreadystatechange = utente;
-		    	httpRequest.open("GET",`https://localhost:3000/test?req_url=${my_url}`,true);
-	    		httpRequest.send();
-    		}
-            function utente(e) {
-                if (e.target.readyState == XMLHttpRequest.DONE){
-                    //window.location = e.target.responseText;
-                    $("p").append(e.target.responseText);
+			    httpRequest.onreadystatechange = function(e) {
+                    if (e.target.readyState == XMLHttpRequest.DONE){
+                        $("div").html(`<p>${e.target.responseText}</p>`)
+                    }
                 }
-            }
+		    	httpRequest.open("GET",`https://localhost:3000/logout`,true);
+	    		httpRequest.send();
+            });
+
         </script>    
     </body>
 </html>

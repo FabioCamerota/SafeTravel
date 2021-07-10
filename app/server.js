@@ -4,8 +4,6 @@ const request = require('request');
 const session = require('express-session');
 const fs = require('fs');
 const https = require('https');
-const passport = require('passport');
-const FacebookStrategy = require('passport-facebook').Strategy;
 const cors = require('cors');
 const Amadeus = require('amadeus');
 const { image_search, image_search_generator } = require("duckduckgo-images-api");
@@ -18,8 +16,6 @@ app.use(express.static(__dirname + '/public')); // serve perchè altrimenti non 
 //Non cambiare il nome della cartella public, altrimenti devi cambiarlo anche qui e anche sotto.
 //app.use(express.urlencoded({ extended: false }));
 app.use(cors()); //cors policy
-app.use(passport.initialize()); // Initialize Passport and restore authentication state, if any, from the...
-//app.use(passport.session()); // ...session, posso usare cookie
 
 app.use(session({ //SESSION
 	secret: 'RDC-progetto',
@@ -34,18 +30,15 @@ const options = {
 
 const port = 3000;
 
-passport.serializeUser((user, cb) => {
-    cb(null, user);
-});
-
-passport.deserializeUser((obj, cb) => {
-    cb(null, obj);
-});
-
 var amadeus = new Amadeus({
 	clientId: process.env.AMADEUS_KEY,
 	clientSecret: process.env.AMADEUS_SECRET
 });
+
+var client_id = process.env.CLIENT_ID_FB;
+var client_secret = process.env.CLIENT_SECRET_FB;
+
+var userdb = 'http://admin:admin@couchdb:5984/users/';
 
 const GADB = fs.readFileSync('GlobalAirportDatabase.txt').toString().split("\n").map(function(v) {
 	let values = v.split(":");
@@ -58,35 +51,22 @@ const GADB = fs.readFileSync('GlobalAirportDatabase.txt').toString().split("\n")
 	return object;
 });
 
-passport.use(new FacebookStrategy({
-    clientID: process.env.CLIENT_ID_FB,
-    clientSecret: process.env.CLIENT_SECRET_FB,
-    callbackURL: "https://localhost:3000/auth/facebook/callback"
-  },
-  function(accessToken, refreshToken, profile, done) {
-	console.log(profile);
-	/*findOrCreateUser(profile).then(function(user) { 
-		console.log(user);
-		done(null,user); //adesso richiamo serializeUser con done
-	});*/
-	updateUser(profile,accessToken).then(function(user) {
-		console.log(user);
-		done(null,user);
-	});
-  }
-));
-
 app.get('/', function(req,res) {
-	if(typeof(req.session.passport) != "undefined" && typeof(req.session.passport.user) != "undefined") {
+	console.log(req.session);
+	console.log(req.sessionID);
+	if(typeof(req.session.user) != "undefined") {
 		console.log("QUERY: "+JSON.stringify(req.query));
 		console.log("SESSION: "+JSON.stringify(req.session));
-		res.sendFile("home2.html",{root:__dirname});
+		res.sendFile("home.html",{root:__dirname});
 	}
 	else
-		res.sendFile("home.html",{root:__dirname});
+		res.sendFile("accesso.html",{root:__dirname});
 });
 
-app.get('/login', passport.authenticate('facebook', { scope: ['read_stream', 'publish_actions'] }));
+app.get('/login', function(req,res) {
+	console.log("hoh");
+	res.redirect(`https://www.facebook.com/v10.0/dialog/oauth?response_type=code&scope=email&client_id=${client_id}&redirect_uri=https://localhost:3000/home&client_secret=${client_secret}`);
+});
 
 app.get('/logout', function(req, res){
 	req.logout();
@@ -97,35 +77,70 @@ app.get('/logout', function(req, res){
 	res.redirect('/');
 });
 
-app.get('/failure', function(req,res) {
-	console.log("failure");
-	res.send("failure");
-});
+app.get('/home', function(req,res) {
+	if(req.query.error=='access_denied'){
+		console.log("Non autorizzato");
+		res.redirect('/');
+	}
+	else if(req.query.code!=null || req.session.code!=null){
+		var code= req.query.code;
+		request.get({
+			url:`https://graph.facebook.com/v10.0/oauth/access_token?client_id=${client_id}&redirect_uri=https://localhost:3000/home&client_secret=${client_secret}&code=${code}`
+		}, function(err, res_get, body) {
+			if (err) {
+				return console.error('Auth failed:', err);
+			}
+			var info = JSON.parse(body);
+			console.log("QUERY:"+JSON.stringify(req.query));
+			console.log("BODY:"+body);
+			if(info.error) {
+				res.redirect("/");
+			}
+			else {
+				userInfo(info.access_token).then(function(response) {
+					console.log(response);
 
-app.get('/auth/facebook', passport.authenticate('facebook', { scope: ['read_stream', 'publish_actions'] }));
+					readCRUD(userdb, {"id": response.id}).then(function(res) {
+						console.log(res);
+					}).catch(function(err) {
+						console.log(err);
+					});
 
-app.get('/auth/facebook/callback',
-  passport.authenticate('facebook', { failureRedirect: '/failure' }),
-  function(req, res) {
-	console.log(req);
-    // Successful authentication, redirect home.
-	res.redirect("https://localhost:3000/");
-  });
+					req.session.token = info.access_token;
+					req.session.user = response;
+					res.sendFile("home.html",{root:__dirname});
+				}).catch(function(err) {
+					console.log(err);
+					res.redirect("/");
+				});
+				/*console.log('Upload successful!  Server responded with:', body);
+				getDati(info.access_token).then(function(infoPromise) {
+					req.session.id_cliente = infoPromise.id;
+					req.session.code = code;
+					req.session.a_t= info.access_token;
+					var id = req.session.id_cliente;
+					var ss = req.sessionID;
+					var nomecognome= infoPromise.name;
+					var nome= nomecognome.split(" ")[0];
+					var cognome = nomecognome.split(" ")[1];
+					var aggiorna = aggiorna_sessione(id, ss, nome, cognome);
+					aggiorna.then(function(result){
+						if(result){
+							res.sendFile("home.html",{root:__dirname});
+						}
+						else{
+							res.redirect(pagina_root);
+							console.log("Variabile di sessione non cambiata o inizializzata");
+						}
+					})
+				});*/
 
-app.get('/user_info', function(req,res) {
-	console.log(req.session);
-	if(typeof(req.session.passport) != "undefined" && typeof(req.session.passport.user) != "undefined") {
-		request.get({url:'https://graph.facebook.com/v10.0/me/?fields=name,email,id,birthday,hometown&access_token='+req.session.passport.user.token}, function (err, res_get, body) {
-	//	request.get({url:'https://graph.facebook.com/v10.0/me/photos?access_token='+req.session.passport.user.token}, function (err, res_get, body) {
-			if(err) {
-				reject("Errore di richiesta dati");
-			} else {
-				var info= JSON.parse(body);
-				res.send(info);
 			}
 		});
+	} 
+	else {
+		res.redirect("/");
 	}
-	else res.redirect("https://localhost:3000/user_info");
 });
 
 app.get('/GADB', function(req,res) {
@@ -224,6 +239,19 @@ app.get('/airline_data', function(req,res) {
 	res.send(data);
 });
 
+function userInfo(token) {
+	return new Promise(function(resolve,reject) {
+		request.get({url:'https://graph.facebook.com/v10.0/me/?fields=name,email,id,birthday,hometown&access_token='+token}, function (err, res_get, body) {
+			if(err) {
+				reject("Errore di richiesta dati");
+			} else {
+				var info= JSON.parse(body);
+				resolve(info);
+			}
+		});
+	});
+}
+
 function cercaItinerari(origin, destination, departureDate) {
 	/*return amadeus.shopping.flightOffersSearch.get({
 			originLocationCode: origin,
@@ -239,111 +267,6 @@ function cercaItinerari(origin, destination, departureDate) {
 			resolve({"data": data});
 		else
 			reject("NONONO");
-	});
-}
-
-function updateUser(profile, accessToken) {
-	return new Promise(function(resolve, reject){
-		request({//url specificato con nome dal docker compose e non localhost
-			url: 'http://admin:admin@couchdb:5984/users/'+profile.id, 
-			method: 'GET'
-		}, function(error, res_get, body){
-			if (res_get.statusCode == 404) { //NON ESISTE, INSERISCO CON UNA PUT
-				request({//url specificato con nome dal docker compose e non localhost
-					url: 'http://admin:admin@couchdb:5984/users/'+profile.id, 
-					method: 'PUT',
-					headers: {'content-type': 'application/json'},
-					body: `{"token: "${accessToken}", "nome": "${profile.displayName}","mete":[]}`
-				}, function(error, res_put, body){
-					if(res.statusCode == 201) { //INSERITO
-						var user = {
-							"id": profile.id,
-							"token": accessToken,
-							"nome": profile.displayName,
-							"mete": []
-						};
-						resolve(user);		
-					}
-					else {
-						console.log(error);
-						console.log(res_put.statusCode, body);
-						reject("Errore, codice: "+res_put.statusCode);
-					}
-				});
-			}
-			else if(res_get.statusCode == 200) { //TROVATO, AGGIORNO ACCESSTOKEN
-				request({
-					url: 'http://admin:admin@couchdb:5984/users/'+profile.id,
-					method: 'PUT',
-					body: `{"_rev": "${JSON.parse(res_get.body)._rev}", "token": "${accessToken}", "nome": "${profile.displayName}","mete":[]}`
-				}, function(error, res_put, body){
-					if(res_put.statusCode == 201) { //INSERITO
-						var user = {
-							"id": JSON.parse(res_get.body)._id,
-							"token": accessToken,
-							"nome": JSON.parse(res_get.body).nome,
-							"mete": JSON.parse(res_get.body).mete
-						};
-						resolve(user);		
-					}
-					else {
-						console.log(error);
-						console.log(res_put.statusCode, body);
-						reject("Errore, codice: "+res_put.statusCode);
-					}
-				});
-			}
-			else {
-				console.log(error);
-				console.log(res_get.statusCode, body);
-				reject("Errore, codice: "+res_get.statusCode);
-			}
-		});
-	});
-}
-
-
-function findOrCreateUserNOUPDATE(profile) {
-	return new Promise(function(resolve, reject){
-		request({//url specificato con nome dal docker compose e non localhost
-			url: 'http://admin:admin@couchdb:5984/users/'+profile.id, 
-			method: 'GET'
-		}, function(error, res, body){
-			if (res.statusCode == 404) { //NON ESISTE, INSERISCO CON UNA PUT
-				request({//url specificato con nome dal docker compose e non localhost
-					url: 'http://admin:admin@couchdb:5984/users/'+profile.id, 
-					method: 'PUT',
-					body: `{"nome": "${profile.displayName}","mete":[]}`
-				}, function(error, res, body){
-					if(res.statusCode == 201) { //INSERITO
-						var user = {
-							"id": profile.id,
-							"nome": profile.displayName,
-							"mete": []
-						};
-						resolve(user);		
-					}
-					else {
-						console.log(error);
-						console.log(res.statusCode, body);
-						reject("Errore, codice: "+res.statusCode);
-					}
-				});
-			}
-			else if(res.statusCode == 200) { //TROVATO
-				var user = {
-					"id": JSON.parse(res.body)._id,
-					"nome": JSON.parse(res.body).nome,
-					"mete": JSON.parse(res.body).mete
-				};
-				resolve(user);
-			}
-			else {
-				console.log(error);
-				console.log(res.statusCode, body);
-				reject("Errore, codice: "+res.statusCode);
-			}
-		});
 	});
 }
 
@@ -461,14 +384,15 @@ app.get('/testdeleteCRUD', function(req,res) {
 	});
 });
 
-
 function createCRUD(db,obj) {
+	let toinsert = {};
+	for(let key in obj) { if(key != "id") toinsert[key] = obj[key];}
 	return new Promise(function(resolve, reject){
 		request({//url specificato con nome dal docker compose e non localhost
 			url: db+obj.id,
 			headers: {'content-type': 'application/json'}, 
 			method: 'PUT',
-			body: JSON.stringify(obj)
+			body: JSON.stringify(toinsert)
 		}, function(error, res, body){
 			if(res.statusCode == 201) { //INSERITO
 				resolve(obj);
@@ -496,31 +420,31 @@ function readCRUD(db,obj) {
 			if(error) reject(error);
 			else if(res.statusCode != 200) reject(JSON.parse(body).error)
 			else{
-				var oggetto = {};
-				oggetto.campo = JSON.parse(body);
-				resolve(oggetto);
+				resolve(JSON.parse(body));
 			}
 		});
 	});
 }
 
 function updateCRUD(db,obj) {
+	let toinsert = {};
+	for(let key in obj) { if(key != "id") toinsert[key] = obj[key];}
 	return new Promise(function(resolve, reject){
 		readCRUD(db,obj).then(function(result) { //prelevo i dati
-			obj["_rev"] = result.campo._rev;	//aggiungo il _rev a obj per poter fare l'update (altrimenti da errore in accesso)
+			obj["_rev"] = result._rev;	//aggiungo il _rev a obj per poter fare l'update (altrimenti da errore in accesso)
 			request({//url specificato con nome dal docker compose e non localhost
 				url: db+obj.id,
 				method: 'PUT',
-				body: JSON.stringify(obj), 
+				body: JSON.stringify(toinsert), 
 			}, function(error, res){
 				if(error) {reject(error);}
-				else if(res.statusCode!=201){reject(res.statusCode);}
+				else if(res.statusCode!=201) {reject(res.statusCode);}
 				else {
 					resolve(true);
 				}
-			}).catch(function(err){
-				reject(err);
-			});	
+			});
+		}).catch(function(err){
+			reject(err);
 		});
 	});
 }
@@ -529,7 +453,7 @@ function deleteCRUD(db,obj) {
 	return new Promise(function(resolve, reject){
 		readCRUD(db,obj).then(function(result) { //prelevo i dati
 			request({//url specificato con nome dal docker compose e non localhost
-				url: db+obj.id+"?rev="+result.campo._rev,
+				url: db+obj.id+"?rev="+result._rev,
 				method: 'DELETE',
 			}, function(error, res) {
 				if(error) {reject(error);}
@@ -538,7 +462,7 @@ function deleteCRUD(db,obj) {
 					resolve(true);
 				}
 			});
-		}).catch(function(err){
+		}).catch(function(err) {
 			reject(err);
 		});
 	});
