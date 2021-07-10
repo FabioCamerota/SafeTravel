@@ -270,7 +270,7 @@ app.get('/preferito', function(req,res) {
 			"price": req.query.prezzo,
 			"duration": req.query.durata,
 			"lastTicketingDate": req.query.disponib,
-			"userN": 0
+			"userN": 1
 		};
 		createCRUD(itinerariesdb,obj).then(function(res_createi) { //...LO CREO E LO INSERISCO IN DB...
 			readCRUD(userdb,req.query.user).then(function(res_readu) { //...LEGGO POI I DATI DELL'UTENTE...
