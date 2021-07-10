@@ -141,6 +141,7 @@
                             <div class="content-photos" align="center"></div>
                             <div class="content-airline" align="center"></div>
                             <div class="content-saved" align="right"></div>
+                            <div class="content-removed" align="right"></div>
 
                             <p>${JSON.stringify(data)}</p>
                         `);
@@ -236,19 +237,29 @@
                         <span class="fa fa-star checked"></span>
                         AGGIUNGI AI PREFERITI
                         <span class="fa fa-star checked"></span>
+                    `)
+                    $("#itinerario .content-removed").html(`
+                        <span class="fa fa-star checked"></span>
+                        RIMUOVI DAI PREFERITI
+                        <span class="fa fa-star checked"></span>
                     `);
                 }
                 else {
                     $("#itinerario .content-saved").html(`
                         <span class="fa fa-star"></span>
-                        AGGIUNGI AI PREFERITI
+                        AGGIUNGI AI PREFERITI ORA
                         <span class="fa fa-star"></span>
+                    `)
+                    $("#itinerario .content-removed").html(`
+                        <span class="fa fa-star "></span>
+                        RIMUOVI DAI PREFERITI
+                        <span class="fa fa-star "></span>
                     `);
                 }
                 $("#itinerario .content-saved").click(function() {
                     $.ajax({
                         type: "GET",
-                        url: "https://localhost:3000/preferito"+window.location.search+`&user=${user._id}&meta_id=${meta_id}`,
+                        url: "https://localhost:3000/preferito_aggiungi"+window.location.search+`&user=${user._id}&meta_id=${meta_id}`,
                         success: function(data) {
                             $("#itinerario .content-saved").html(`
                                 <span class="fa fa-star checked"></span>
@@ -256,6 +267,19 @@
                                 <span class="fa fa-star checked"></span>
                             `);
                             caricaDatiUtente();
+                        },
+                        error: function() {
+                            user = {};
+                        }
+                    });
+                });
+
+                $("#itinerario .content-removed").click(function() {
+                    $.ajax({
+                        type: "GET",
+                        url: "https://localhost:3000/preferito_rimuovi"+window.location.search+`&user=${user._id}&meta_id=${meta_id}`,
+                        success: function() {
+                           console.log("rimosso con successo dalle mete dell'utente")
                         },
                         error: function() {
                             user = {};

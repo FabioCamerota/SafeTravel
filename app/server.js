@@ -231,7 +231,7 @@ app.get('/airline_data', function(req,res) {
 	res.send(data);
 });
 
-app.get('/preferito', function(req,res) {
+app.get('/preferito_aggiungi', function(req,res) {
 	console.log(req.query);
 	readCRUD(itinerariesdb, {"id": req.query.meta_id}).then(function(res_readi) { //L'ITINERARIO ESISTE IN DB...
 		let obj = {
@@ -273,7 +273,7 @@ app.get('/preferito', function(req,res) {
 			"userN": 1
 		};
 		createCRUD(itinerariesdb,obj).then(function(res_createi) { //...LO CREO E LO INSERISCO IN DB...
-			readCRUD(userdb,req.query.user).then(function(res_readu) { //...LEGGO POI I DATI DELL'UTENTE...
+			readCRUD(userdb,{"id": req.query.user}).then(function(res_readu) { //...LEGGO POI I DATI DELL'UTENTE...
 				let new_itineraries = res_readu.mete;
 				new_itineraries.push(req.query.meta_id);
 				let user = {
@@ -292,6 +292,64 @@ app.get('/preferito', function(req,res) {
 		console.log(err_readi)
 	});
 });
+
+/*-------------------------------------------*/
+app.get('/preferito_rimuovi', function(req,res) {
+	function aux(){
+		readCRUD(userdb,{"id": req.query.user}).then(function(res_readu) { //...LEGGO POI I DATI DELL'UTENTE...
+			let new_itineraries = res_readu.mete;
+
+			index = new_itineraries.indexOf(req.query.meta_id);				
+			new_itineraries.splice(index,1);					//creo nuovo array senza meta che utente ha eliminato
+			console.log(new_itineraries);
+
+			let user = {
+				"id": res_readu._id,
+				"token": res_readu.token,
+				"nome": res_readu.nome,
+				"mete": new_itineraries
+			}
+
+		updateCRUD(userdb,user).then(function(res_updateu) { //...E AGGIORNO IL SUO ARRAY TOGLIENDO L'ITINERARIO.
+			console.log(req.session.user);
+			req.session.user.mete = new_itineraries;
+			console.log(req.session.user);
+		}).catch((err_updateu)=>console.log(err_updateu+246));
+	}).catch((err_readu)=>console.log(err_readu+247));
+	};
+
+	readCRUD(itinerariesdb, {"id": req.query.meta_id}).then(function(res_readi) { //L'ITINERARIO ESISTE IN DB...
+		let obj = {
+			"id": res_readi._id,
+			"origin": res_readi.origin,
+			"destination": res_readi.destination,
+			"departureDate": res_readi.departureDate,
+			"price": res_readi.price,
+			"duration": res_readi.duration,
+			"lastTicketingDate": res_readi.lastTicketingDate,
+			"userN": res_readi.userN-1											//decremento
+		};
+
+		if(obj["userN"] <1 ) {													//nessun utente l'ha salvato									
+			deleteCRUD(itinerariesdb,obj).then(function(res_del){				//elimino da itineraries
+				console.log("Meta eliminata dalle preferite con successo!");
+			}).catch((err_del)=>console.log(err_del + "Errore in fase di eliminazione"));
+
+			aux();																
+		}
+		else{
+
+		updateCRUD(itinerariesdb, obj).then(function(res_updatei) { //... AGGIORNO QUELL'ITINERARIO IN DB (almeno 1 utente lo ha salvato) ...
+			
+			aux();													
+
+		}).catch((err_updatei)=>console.log(err_updatei+248));
+	}
+		}).catch(function(err_readi) { //SE INVECE L'ITINERARIO NON ESISTE IN DB...(errore : in teoria ciò non può accadere)
+			res.send(err_readi);
+		});
+});
+/*-------------------------------------------*/
 
 function userInfo(token) {
 	return new Promise(function(resolve,reject) {
@@ -511,7 +569,7 @@ function deleteCRUD(db,obj) {
 				method: 'DELETE',
 			}, function(error, res) {
 				if(error) {reject(error);}
-				else if(res.statusCode!=200){reject(false);}
+				else if(res.statusCode!=200){reject(res.statusCode);}
 				else {
 					resolve(true);
 				}
