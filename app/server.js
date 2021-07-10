@@ -10,9 +10,13 @@ const cors = require('cors');
 const Amadeus = require('amadeus');
 const { image_search, image_search_generator } = require("duckduckgo-images-api");
 const { response } = require('express');
+const WebSocket = require('ws');
 
 var app = express(); // Express configuration
 
+app.use(express.static(__dirname + '/public')); // serve perchè altrimenti non si carica il file html che contiene la documentazione sulle Api esterne
+//Non cambiare il nome della cartella public, altrimenti devi cambiarlo anche qui e anche sotto.
+//app.use(express.urlencoded({ extended: false }));
 app.use(cors()); //cors policy
 app.use(passport.initialize()); // Initialize Passport and restore authentication state, if any, from the...
 //app.use(passport.session()); // ...session, posso usare cookie
@@ -28,7 +32,7 @@ const options = {
   cert: fs.readFileSync('cert.pem')
 };
 
-port = 3000;
+const port = 3000;
 
 passport.serializeUser((user, cb) => {
     cb(null, user);
@@ -343,7 +347,39 @@ function findOrCreateUserNOUPDATE(profile) {
 	});
 }
 
-https.createServer(options, app).listen(port, function() { 
+const httpServer = https.createServer(options, app);
+
+//Inizio WEBSOCKET
+const ws = new WebSocket.Server({ server: httpServer });
+CLIENTS=[];
+ws.on('connection', function(conn) {
+	CLIENTS.push(conn);
+	conn.on('message', function(message) {
+	console.log('received:  %s', message);
+	sendAll(message);
+
+});
+
+console.log("new connection");
+	conn.send("NUOVO CLIENTE CONNESSO");
+
+	conn.on('close', function() {
+	  console.log("connection closed");
+	  CLIENTS.splice(CLIENTS.indexOf(conn), 1);
+	});
+
+});
+
+//send messeages vers all clients
+function sendAll (message) {
+for (var i=0; i<CLIENTS.length; i++) {
+ var j=i+1;
+ CLIENTS[i].send("Messaggio per il client "+j+": "+message);
+}
+}
+//Fine WEBSOCKET
+
+httpServer.listen(port, function() { 
     console.log(`In ascolto sulla porta ${port}`);
 });
 
@@ -506,8 +542,18 @@ function deleteCRUD(db,obj) {
 	});
 }
 
-
 //https://www.facebook.com/dialog/share?app_id=310503350806055&display=popup&href=https://travelfree.altervista.org/&quote=TEST, vota qui: https://locahost:3000/mete
+
+// SEZIONE --- API TERZE
+app.get("/api",function(req,res){
+	res.sendFile("./public/index.html",{root:__dirname});
+
+});
+
+//Api terze di prova
+app.get("/api/metaPiuScelta",function(req,res){
+	res.send("La meta più scelta è la Spagna");
+});
 
 //API TERZI
 /*

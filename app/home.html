@@ -7,6 +7,10 @@
         <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
     </header>
     <body>
+        <p>
+            Result :<output name="" type="text" id="result" value"readonly"></output>
+        </p>
+        <input type="text" onchange="ws.send(this.value);">
         <a href="https://localhost:3000/login">
             <button id="login">login</button>
         </a>
@@ -14,7 +18,15 @@
             <button id="logout">logout</button>
         </a>
         <script>
-
+            if("WebSocket" in window){
+                var ws = new WebSocket("wss://localhost:3000/");
+                ws.onmessage=function(event){
+                    document.getElementById("result").value=event.data;
+                }
+            }else{
+               // The browser doesn't support WebSocket
+               alert("WebSocket NOT supported by your Browser!");
+            }
             $("#login").click(function() {
 			    var httpRequest = new XMLHttpRequest();
 			    httpRequest.onreadystatechange = function(e) {
