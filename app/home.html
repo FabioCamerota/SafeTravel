@@ -7,59 +7,20 @@
         <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
     </header>
     <body>
-        <a href="https://localhost:3000/user_info">
-            <button>user info</button>
+        <a href="https://localhost:3000/profilo">
+            <button>il tuo profilo</button>
         </a>
-        <a href="https://localhost:3000/home">
-            <button>change page (to home)</button>
+        <a href="https://localhost:3000/user_info">
+            <button>vedi mete proposte</button>
+        </a>
+        <a href="https://localhost:3000/mete">
+            <button>cerca una meta</button>
         </a>
         <div></div>
 
         <script>
 
-            $("#test2").click(function() {
-			    var httpRequest = new XMLHttpRequest();
-			    httpRequest.onreadystatechange = function(e) {
-                    if (e.target.readyState == XMLHttpRequest.DONE){
-                        $("div").append(`e.target.responseText)`);
-                    }
-                }
-		    	httpRequest.open("GET",`https://localhost:3000/user_info`,true);
-	    		httpRequest.send();
-            });
-
-            /*
-            const params = new URLSearchParams(document.location.search);
-            const code = params.get("code");
-            const my_url = "http://localhost:3000";
-
-            $("#test2").click(function() {
-			    var httpRequest = new XMLHttpRequest();
-			    httpRequest.onreadystatechange = function(e) {
-                    if (e.target.readyState == XMLHttpRequest.DONE){
-                        $("p").append(e.target.responseText);
-                    }
-                }
-		    	httpRequest.open("GET",`https://localhost:3001/token?code=${code}`,true);
-	    		httpRequest.send();
-            });
-
-            $("#test").click(caricaUtente);
-
-
-            function caricaUtente(e) {
-			    var httpRequest = new XMLHttpRequest();
-			    httpRequest.onreadystatechange = utente;
-		    	httpRequest.open("GET",`https://localhost:3001/test?req_url=${my_url}`,true);
-	    		httpRequest.send();
-    		}
-            function utente(e) {
-                if (e.target.readyState == XMLHttpRequest.DONE){
-                    //window.location = e.target.responseText;
-                    $("p").append(e.target.responseText);
-                }
-            }
-            */
+            
         </script>    
     </body>
 </html>

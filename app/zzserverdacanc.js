@@ -39,6 +39,7 @@ var client_id = process.env.CLIENT_ID_FB;
 var client_secret = process.env.CLIENT_SECRET_FB;
 
 var userdb = 'http://admin:admin@localhost:5984/users/';
+var itinerariesdb = 'http://admin:admin@localhost:5984/itineraries/';
 
 const GADB = fs.readFileSync('GlobalAirportDatabase.txt').toString().split("\n").map(function(v) {
 	let values = v.split(":");
@@ -69,11 +70,7 @@ app.get('/login', function(req,res) {
 });
 
 app.get('/logout', function(req, res){
-	req.logout();
 	req.session.destroy();
-	console.log("QUERY: "+JSON.stringify(req.query));
-	console.log("SESSION: "+JSON.stringify(req.session));
-//	res.send(JSON.stringify(req.query)+"\n"+JSON.stringify(req.session));
 	res.redirect('/');
 });
 
@@ -82,7 +79,7 @@ app.get('/home', function(req,res) {
 		console.log("Non autorizzato");
 		res.redirect('/');
 	}
-	else if(req.query.code!=null || req.session.code!=null){
+	else if(req.query.code!=null || req.session.code!=null) {
 		var code= req.query.code;
 		request.get({
 			url:`https://graph.facebook.com/v10.0/oauth/access_token?client_id=${client_id}&redirect_uri=https://localhost:3000/home&client_secret=${client_secret}&code=${code}`
@@ -98,43 +95,21 @@ app.get('/home', function(req,res) {
 			}
 			else {
 				userInfo(info.access_token).then(function(response) {
-					console.log(response);
-
-					readCRUD(userdb, {"id": response.id}).then(function(res) {
-						console.log(res);
-					}).catch(function(err) {
-						console.log(err);
+					readCRUD(userdb, {"id": response.id}).then(function(res_read) {
+						req.session.token = info.access_token;
+						req.session.user = res_read;
+						res.sendFile("home.html",{root:__dirname});						
+					}).catch(function(err_read) {
+						createCRUD(userdb, {"id": response.id, "token": info.access_token, "nome": response.name, "mete": []}).then(function(res_create) {
+							req.session.token = info.access_token;
+							req.session.user = {"_id": response.id, "token": info.access_token, "nome": response.name, "mete": []};
+							res.sendFile("home.html",{root:__dirname});
+						}).catch((err_create)=>console.log(err_create));
 					});
-
-					req.session.token = info.access_token;
-					req.session.user = response;
-					res.sendFile("home.html",{root:__dirname});
 				}).catch(function(err) {
 					console.log(err);
 					res.redirect("/");
 				});
-				/*console.log('Upload successful!  Server responded with:', body);
-				getDati(info.access_token).then(function(infoPromise) {
-					req.session.id_cliente = infoPromise.id;
-					req.session.code = code;
-					req.session.a_t= info.access_token;
-					var id = req.session.id_cliente;
-					var ss = req.sessionID;
-					var nomecognome= infoPromise.name;
-					var nome= nomecognome.split(" ")[0];
-					var cognome = nomecognome.split(" ")[1];
-					var aggiorna = aggiorna_sessione(id, ss, nome, cognome);
-					aggiorna.then(function(result){
-						if(result){
-							res.sendFile("home.html",{root:__dirname});
-						}
-						else{
-							res.redirect(pagina_root);
-							console.log("Variabile di sessione non cambiata o inizializzata");
-						}
-					})
-				});*/
-
 			}
 		});
 	} 
@@ -146,6 +121,24 @@ app.get('/home', function(req,res) {
 app.get('/GADB', function(req,res) {
 	console.log("sent GADB");
 	res.send(GADB);
+});
+
+app.get('/profilo', function(req, res) {
+	res.sendFile("profilo.html",{root:__dirname});
+});
+
+app.get('/profilo_dati', function(req, res) {
+	console.log(req.session);
+	console.log(req.session.user);
+	readCRUD(userdb,{"id":req.session.user._id}).then(function(res_readu) {
+		console.log("--------------------------------");
+		console.log(res_readu);
+		req.session.user = res_readu;
+		console.log("A--------------------------------");
+		console.log(req.session.user);
+		console.log("--------------------------------");
+		res.send(req.session.user);
+	});
 });
 
 app.get('/mete', function(req,res) {
@@ -173,7 +166,6 @@ app.get('/meta_dettagli', function(req,res) {
 
 app.get('/meta_dettagli_data', function(req,res) {
 	console.log(req.query);
-
 	cercaItinerari(req.query.origin,req.query.destination,req.query.departureDate).then(function(response){
 		if(response.data.length == 0)
 			res.send("Nessun itinerario trovato");
@@ -237,6 +229,68 @@ app.get('/airline_data', function(req,res) {
 	var data = JSON.parse(fs.readFileSync('test_airline_data.json'));
 	console.log(data);
 	res.send(data);
+});
+
+app.get('/preferito', function(req,res) {
+	console.log(req.query);
+	readCRUD(itinerariesdb, {"id": req.query.meta_id}).then(function(res_readi) {
+		let obj = {
+			"id": res_readi._id,
+			"origin": res_readi.origin,
+			"destination": res_readi.destination,
+			"departureDate": res_readi.departureDate,
+			"price": res_readi.price,
+			"duration": res_readi.duration,
+			"lastTicketingDate": res_readi.lastTicketingDate,
+			"userN": res_readi.userN+1
+		};
+		updateCRUD(itinerariesdb, obj).then(function(res_updatei) {
+			readCRUD(userdb,{"id": req.query.user}).then(function(res_readu) {
+				let new_itineraries = res_readu.mete;
+				new_itineraries.push(req.query.meta_id);
+				let user = {
+					"id": res_readu._id,
+					"token": res_readu.token,
+					"nome": res_readu.nome,
+					"mete": new_itineraries
+				}
+				updateCRUD(userdb,user).then(function(res_updateu) {
+					console.log(req.session.user);
+					req.session.user.mete = new_itineraries;
+					console.log(req.session.user);
+				}).catch((err_updateu)=>console.log(err_updateu+246));
+			}).catch((err_readu)=>console.log(err_readu+247));
+		}).catch((err_updatei)=>console.log(err_updatei+248));
+	}).catch(function(err_readi) {
+		let obj = {
+			"id": req.query.meta_id,
+			"origin": req.query.origin,
+			"destination": req.query.destination,
+			"departureDate": req.query.departureDate,
+			"price": req.query.prezzo,
+			"duration": req.query.durata,
+			"lastTicketingDate": req.query.disponib,
+			"userN": 0
+		};
+		createCRUD(itinerariesdb,obj).then(function(res_createi) {
+			readCRUD(userdb,req.query.user).then(function(res_readu) {
+				let new_itineraries = res_readu.mete;
+				new_itineraries.push(req.query.meta_id);
+				let user = {
+					"id": res_readu._id,
+					"token": res_readu.token,
+					"nome": res_readu.nome,
+					"mete": new_itineraries
+				}
+				updateCRUD(userdb,user).then(function(res_updateu) {
+					console.log(req.session.user);
+					req.session.user.mete = new_itineraries;
+					console.log(req.session.user);
+				}).catch((err_updateu)=>console.log(err_updateu+268));
+			}).catch((err_readu)=>console.log(err_readu+269));
+		}).catch((err_createi)=>console.log(err_createi+270));
+		console.log(err_readi)
+	});
 });
 
 function userInfo(token) {
@@ -431,7 +485,7 @@ function updateCRUD(db,obj) {
 	for(let key in obj) { if(key != "id") toinsert[key] = obj[key];}
 	return new Promise(function(resolve, reject){
 		readCRUD(db,obj).then(function(result) { //prelevo i dati
-			obj["_rev"] = result._rev;	//aggiungo il _rev a obj per poter fare l'update (altrimenti da errore in accesso)
+			toinsert["_rev"] = result._rev;	//aggiungo il _rev a obj per poter fare l'update (altrimenti da errore in accesso)
 			request({//url specificato con nome dal docker compose e non localhost
 				url: db+obj.id,
 				method: 'PUT',

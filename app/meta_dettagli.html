@@ -46,15 +46,24 @@
             .fa-angle-double-down {
                 font-size: 50px !important;
             }
+            .fa-star {
+                font-size: 200% !important;
+                color: black;
+            }
+            .checked {
+                color: blue;
+            }
         </style>
     </header>
     <body onload="caricaItinerario()">
-        
         <div id="itinerario">dsa</div>
+        <div id="loading"><div class="loader"></div></div>
 
         <script>
 
+            var user; caricaDatiUtente();
             var GADB;
+            var elements2load = 3;
 
             $.ajax({
                 type: "GET",
@@ -76,8 +85,20 @@
                 }
             });
 
+            function caricaDatiUtente() {
+                $.ajax({
+                    type: "GET",
+                    url: "https://localhost:3000/profilo_dati",
+                    success: function(data) {
+                        user = data;
+                    },
+                    error: function() {
+                        user = {};
+                    }
+                });
+            }
+
             function caricaItinerario() {
-                $("#itinerario").html(`<div class="loader"></div>`);
                 $.ajax({
                     type: "GET",
                     url: "https://localhost:3000/meta_dettagli_data"+window.location.search,
@@ -119,16 +140,19 @@
 
                             <div class="content-photos" align="center"></div>
                             <div class="content-airline" align="center"></div>
+                            <div class="content-saved" align="right"></div>
 
                             <p>${JSON.stringify(data)}</p>
-                            <br/>
-                            <p>${JSON.stringify(allcities)}</p>
                         `);
 
-                        $("#table").append(`${JSON.stringify(data)}`);
+                        if(--elements2load <= 0) $("#loading").html("");
 
                         photosSearch(allcities);
                         airlineSearch(data.validatingAirlineCodes[0]);
+
+                        //origin=BKK&destination=AAR&departureDate=2021-08-01&prezzo=479.11&durata=PT18H35M&disponib=2021-08-01
+                        let meta_id = window.location.search.substring(1).split("&").map(x=>x.split("=")[1]).reduce((a,b)=>a+"_"+b);
+                        isSaved(meta_id);
                     },
                     error: function() {
                         alert("Errore");
@@ -137,7 +161,6 @@
             }
 
             function photosSearch(allcities) {
-                $("#itinerario .content-photos").html(`<div class="loader"></div>`);
                 var ris = [];
                 for(let i = 0; i < allcities.length; i++) {
                     $.ajax({
@@ -163,6 +186,8 @@
                                         <br/>
                                     `);
                                 }
+
+                                if(--elements2load <= 0) $("#loading").html("");
                             }
                         },
                         error: function() {
@@ -173,8 +198,6 @@
             }
 
             function airlineSearch(code) {
-                $("#itinerario .content-airline").html(`<div class="loader"></div>`);
-                
                 $.ajax({
                     type: "GET",
                     url: `https://localhost:3000/airline_data?code=${code}`,
@@ -192,6 +215,7 @@
                                 $("#itinerario .content-airline").append(`
                                     <img width="150px" src=${data}>
                                 `);
+                                if(--elements2load <= 0) $("#loading").html("");
                             },
                             error: function() {
                                 alert("Errore");
@@ -202,7 +226,43 @@
                         alert("Errore");
                     }
                 });
-                
+            }
+
+            function isSaved(meta_id) {
+                if(user == "") return;                
+                let mete = user.mete;
+                if(mete.includes(meta_id)) {
+                    $("#itinerario .content-saved").html(`
+                        <span class="fa fa-star checked"></span>
+                        AGGIUNGI AI PREFERITI
+                        <span class="fa fa-star checked"></span>
+                    `);
+                }
+                else {
+                    $("#itinerario .content-saved").html(`
+                        <span class="fa fa-star"></span>
+                        AGGIUNGI AI PREFERITI
+                        <span class="fa fa-star"></span>
+                    `);
+                }
+                $("#itinerario .content-saved").click(function() {
+                    $.ajax({
+                        type: "GET",
+                        url: "https://localhost:3000/preferito"+window.location.search+`&user=${user._id}&meta_id=${meta_id}`,
+                        success: function(data) {
+                            $("#itinerario .content-saved").html(`
+                                <span class="fa fa-star checked"></span>
+                                AGGIUNGI AI PREFERITI
+                                <span class="fa fa-star checked"></span>
+                            `);
+                            caricaDatiUtente();
+                        },
+                        error: function() {
+                            user = {};
+                        }
+                    });
+                });
+
             }
 
 
