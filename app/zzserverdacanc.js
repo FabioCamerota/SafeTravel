@@ -462,7 +462,10 @@ app.get('/testdeleteCRUD', function(req,res) {
 });
 
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 63f2d6b8d8c10032c75099600b5bd77cc9c074ae
 function createCRUD(db,obj) {
 	return new Promise(function(resolve, reject){
 		request({//url specificato con nome dal docker compose e non localhost
@@ -473,7 +476,11 @@ function createCRUD(db,obj) {
 		}, function(error, res, body){
 			if(res.statusCode == 201) { //INSERITO
 				resolve(obj);
+<<<<<<< HEAD
 			}else if(res.statusCode == 409){//Elemento già presente
+=======
+			} else if(res.statusCode == 409) {//Elemento già presente
+>>>>>>> 63f2d6b8d8c10032c75099600b5bd77cc9c074ae
 				console.log(error);
 				console.log(res.statusCode, body);
 				reject("Elemento già presente");
@@ -507,6 +514,7 @@ function readCRUD(db,obj) {
 
 function updateCRUD(db,obj) {
 	return new Promise(function(resolve, reject){
+<<<<<<< HEAD
 		readCRUD(db,obj).then(function(result){ //prelevo i dati
 		obj["_rev"] = result.campo._rev;	//aggiungo il _rev a obj per poter fare l'update (altrimenti da errore in accesso)
 		request({//url specificato con nome dal docker compose e non localhost
@@ -521,11 +529,30 @@ function updateCRUD(db,obj) {
 				}
 			});
 		})
+=======
+		readCRUD(db,obj).then(function(result) { //prelevo i dati
+			obj["_rev"] = result.campo._rev;	//aggiungo il _rev a obj per poter fare l'update (altrimenti da errore in accesso)
+			request({//url specificato con nome dal docker compose e non localhost
+				url: db+obj.id,
+				method: 'PUT',
+				body: JSON.stringify(obj), 
+			}, function(error, res){
+				if(error) {reject(error);}
+				else if(res.statusCode!=201){reject(res.statusCode);}
+				else {
+					resolve(true);
+				}
+			}).catch(function(err){
+				reject(err);
+			});	
+		});
+>>>>>>> 63f2d6b8d8c10032c75099600b5bd77cc9c074ae
 	});
 }
 
 function deleteCRUD(db,obj) {
 	return new Promise(function(resolve, reject){
+<<<<<<< HEAD
 		readCRUD(db,obj).then(function(result){ //prelevo i dati
 
 		request({//url specificato con nome dal docker compose e non localhost
@@ -539,6 +566,22 @@ function deleteCRUD(db,obj) {
 				}
 			});
 		})
+=======
+		readCRUD(db,obj).then(function(result) { //prelevo i dati
+			request({//url specificato con nome dal docker compose e non localhost
+				url: db+obj.id+"?rev="+result.campo._rev,
+				method: 'DELETE',
+			}, function(error, res) {
+				if(error) {reject(error);}
+				else if(res.statusCode!=200){reject(false);}
+				else {
+					resolve(true);
+				}
+			});
+		}).catch(function(err){
+			reject(err);
+		});
+>>>>>>> 63f2d6b8d8c10032c75099600b5bd77cc9c074ae
 	});
 }
 
