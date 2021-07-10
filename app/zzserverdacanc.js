@@ -245,12 +245,12 @@ function cercaItinerari(origin, destination, departureDate) {
 function updateUser(profile, accessToken) {
 	return new Promise(function(resolve, reject){
 		request({//url specificato con nome dal docker compose e non localhost
-			url: 'http://admin:admin@couchdb:5984/users/'+profile.id, 
+			url: 'http://admin:admin@localhost:5984/users/'+profile.id, 
 			method: 'GET'
 		}, function(error, res_get, body){
 			if (res_get.statusCode == 404) { //NON ESISTE, INSERISCO CON UNA PUT
 				request({//url specificato con nome dal docker compose e non localhost
-					url: 'http://admin:admin@couchdb:5984/users/'+profile.id, 
+					url: 'http://admin:admin@localhost:5984/users/'+profile.id, 
 					method: 'PUT',
 					headers: {'content-type': 'application/json'},
 					body: `{"token: "${accessToken}", "nome": "${profile.displayName}","mete":[]}`
@@ -273,7 +273,7 @@ function updateUser(profile, accessToken) {
 			}
 			else if(res_get.statusCode == 200) { //TROVATO, AGGIORNO ACCESSTOKEN
 				request({
-					url: 'http://admin:admin@couchdb:5984/users/'+profile.id,
+					url: 'http://admin:admin@localhost:5984/users/'+profile.id,
 					method: 'PUT',
 					body: `{"_rev": "${JSON.parse(res_get.body)._rev}", "token": "${accessToken}", "nome": "${profile.displayName}","mete":[]}`
 				}, function(error, res_put, body){
@@ -306,12 +306,12 @@ function updateUser(profile, accessToken) {
 function findOrCreateUserNOUPDATE(profile) {
 	return new Promise(function(resolve, reject){
 		request({//url specificato con nome dal docker compose e non localhost
-			url: 'http://admin:admin@couchdb:5984/users/'+profile.id, 
+			url: 'http://admin:admin@localhost:5984/users/'+profile.id, 
 			method: 'GET'
 		}, function(error, res, body){
 			if (res.statusCode == 404) { //NON ESISTE, INSERISCO CON UNA PUT
 				request({//url specificato con nome dal docker compose e non localhost
-					url: 'http://admin:admin@couchdb:5984/users/'+profile.id, 
+					url: 'http://admin:admin@localhost:5984/users/'+profile.id, 
 					method: 'PUT',
 					body: `{"nome": "${profile.displayName}","mete":[]}`
 				}, function(error, res, body){
@@ -391,17 +391,17 @@ httpServer.listen(port, function() {
 	Vedere come funzionano web socket
 */
 
-//'http://admin:admin@couchdb:5984/users/'
+//'http://admin:admin@localhost:5984/users/'
 //COUCHDB: http://127.0.0.1:5984/_utils/#login
 app.get('/testcreateCRUD', function(req,res) {
-	//INSERISCO NEL SEGUENTE DATABASE: http://admin:admin@couchdb:5984/users/
+	//INSERISCO NEL SEGUENTE DATABASE: http://admin:admin@localhost:5984/users/
 	var obj = {
 		"id": 1213123,
 		"token": "tokentest",
 		"nome": "NOME",
 		"mete": []
 	};
-	createCRUD('http://admin:admin@couchdb:5984/users/',obj).then(function(response) {
+	createCRUD('http://admin:admin@localhost:5984/users/',obj).then(function(response) {
 		console.log(response);
 		res.send(response);
 	}).catch(function(err) {
@@ -411,14 +411,14 @@ app.get('/testcreateCRUD', function(req,res) {
 });
 
 app.get('/testreadCRUD', function(req,res) {
-	//INSERISCO NEL SEGUENTE DATABASE: http://admin:admin@couchdb:5984/users/
+	//INSERISCO NEL SEGUENTE DATABASE: http://admin:admin@localhost:5984/users/
 	var obj = {
 		"id": 1213123,
 		"token": "tokentest",
 		"nome": "NOME",
 		"mete": []
 	};
-	readCRUD('http://admin:admin@couchdb:5984/users/',obj).then(function(response) {
+	readCRUD('http://admin:admin@localhost:5984/users/',obj).then(function(response) {
 		console.log(response);
 		res.send(response);
 	}).catch(function(err) {
@@ -428,14 +428,14 @@ app.get('/testreadCRUD', function(req,res) {
 });
 
 app.get('/testupdateCRUD', function(req,res) {
-	//INSERISCO NEL SEGUENTE DATABASE: http://admin:admin@couchdb:5984/users/
+	//INSERISCO NEL SEGUENTE DATABASE: http://admin:admin@localhost:5984/users/
 	var obj = {
 		"id": 1213123,
 		"token": "tokentest MODIFICATO UPDATATO",
 		"nome": "NOME",
 		"mete": []
 	};
-	updateCRUD('http://admin:admin@couchdb:5984/users/',obj).then(function(response) {
+	updateCRUD('http://admin:admin@localhost:5984/users/',obj).then(function(response) {
 		console.log(response);
 		res.send(response);
 	}).catch(function(err) {
@@ -445,14 +445,14 @@ app.get('/testupdateCRUD', function(req,res) {
 });
 
 app.get('/testdeleteCRUD', function(req,res) {
-	//INSERISCO NEL SEGUENTE DATABASE: http://admin:admin@couchdb:5984/users/
+	//INSERISCO NEL SEGUENTE DATABASE: http://admin:admin@localhost:5984/users/
 	var obj = {
 		"id": 1213123,
 		"token": "tokentest",
 		"nome": "NOME",
 		"mete": []
 	};
-	deleteCRUD('http://admin:admin@couchdb:5984/users/',obj).then(function(response) {
+	deleteCRUD('http://admin:admin@localhost:5984/users/',obj).then(function(response) {
 		console.log(response);
 		res.send(response);
 	}).catch(function(err) {
@@ -546,7 +546,8 @@ function deleteCRUD(db,obj) {
 
 // SEZIONE --- API TERZE
 app.get("/api",function(req,res){
-	res.sendFile("./public/api.html",{root:__dirname});
+	res.sendFile("./public/index.html",{root:__dirname});
+
 });
 
 //Api terze di prova
