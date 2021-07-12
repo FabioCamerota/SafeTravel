@@ -14,7 +14,7 @@ const GADB = fs.readFileSync('GlobalAirportDatabase.txt').toString().split("\n")
 });
 console.log(GADB);
 
-for(let i = 0; i < 1; i++) {
+for(let i = 0; i < 10; i++) {
   var options = {
     'method': 'GET',
     'url': 'http://api.coronatracker.com/v3/stats/worldometer/country',
