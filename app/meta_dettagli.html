@@ -60,7 +60,7 @@
         <div id="loading"><div class="loader"></div></div>
 
         <script>
-
+            var ws = new WebSocket("wss://localhost:3000/");
             var user; caricaDatiUtente();
             var GADB;
             var elements2load = 3;
@@ -261,6 +261,9 @@
                         type: "GET",
                         url: "https://localhost:3000/preferito_aggiungi"+window.location.search+`&user=${user._id}&meta_id=${meta_id}`,
                         success: function(data) {
+                            
+                            ws.send("aggiorna");
+                            console.log("ho agg");
                             $("#itinerario .content-saved").html(`
                                 <span class="fa fa-star checked"></span>
                                 AGGIUNGI AI PREFERITI
@@ -279,6 +282,8 @@
                         type: "GET",
                         url: "https://localhost:3000/preferito_rimuovi"+window.location.search+`&user=${user._id}&meta_id=${meta_id}`,
                         success: function() {
+                            ws.send("aggiorna");
+                            console.log("ho agg");
                            console.log("rimosso con successo dalle mete dell'utente")
                         },
                         error: function() {
