@@ -33,6 +33,18 @@
                 color: blue; 
                 text-decoration: underline;
             }
+            .isFavourite {
+                color: orange;
+                cursor: pointer;
+            }
+            .isFavourite:hover {
+                color: black;
+                cursor: pointer;
+            }
+            .notFavourite:hover {
+                color: orange;
+                cursor: pointer;
+            }
             .loader {
                 position: relative;
                 display: block;
@@ -49,14 +61,6 @@
             @keyframes spin {
                 0% { transform: rotate(0deg); }
                 100% { transform: rotate(360deg); }
-            }
-            .modal-photo {
-                width: 300px;
-                height: 300px;
-                display: inline-block; /* or you could float them */
-                overflow: hidden;
-                background-size: cover;
-                border-radius: 50%;
             }
         </style>
     </header>
@@ -76,10 +80,8 @@
             <datalist id="suggestions">
             </datalist>
         </form>
-
         
         <div id="table"></div>
-        <div id="modalAnchor"></div>
 
         <script>
 
@@ -91,10 +93,12 @@
             //$("#depdate").attr("value",`${y}-${m}-${d}`);
 
             var GADB;
+            var user;
 
             $.ajax({
                 type: "GET",
                 url: "https://localhost:3000/GADB",
+                async: false,
                 success: function (data) {
                     GADB = data;
                     arr = data.filter(v=>v.IATA!=`N/A`)
@@ -107,6 +111,18 @@
                         $("#suggestions").append(`<option value="${city}">`);
                     }
                 },
+                error: function() {
+                    alert("Errore");
+                }
+            });
+
+            $.ajax({
+                type: "GET",
+                url: "https://localhost:3000/profilo_dati",
+                async: false,
+                success: function(data) {
+                        user = data;
+                    },
                 error: function() {
                     alert("Errore");
                 }
@@ -129,7 +145,8 @@
             });
 
 
-            function data2Flights(flightOffers) {
+            function data2Flights(flightOffers) {                    //alert(JSON.stringify(user.mete));
+
                 $("#table").html(`
                     <div class="container text-center">
                         <div class="col-md-4"><button id="sort_by_price">I MENO COSTOSI</button></div>
@@ -174,14 +191,80 @@
                     html += `<div class="list-group-item-text">
                                 PRENOTAZIONI DISPONIBILI FINO AL <b>${flightOffer.lastTicketingDate}</b><br/>
                                 DURATA DELL'ITINERARIO: <b>${flightOffer.itineraries[0].duration}</b>
-                                <a class="details" href="https://localhost:3000/meta_dettagli?origin=${origin}&destination=${destination}&departureDate=${departureDate}&prezzo=${flightOffer.price.grandTotal}&durata=${flightOffer.itineraries[0].duration}&disponib=${flightOffer.lastTicketingDate}" target="_blank">VEDI I DETTAGLI</a>
+                                <a class="details" href="https://localhost:3000/meta_dettagli?origin=${origin}&destination=${destination}&departureDate=${departureDate}&prezzo=${flightOffer.price.grandTotal}&currency=${flightOffer.price.currency}&durata=${flightOffer.itineraries[0].duration}&disponib=${flightOffer.lastTicketingDate}" target="_blank">VEDI I DETTAGLI</a>
+                                <br/>`
+                    
+                    let metaID = `${origin}_${destination}_${departureDate}_${flightOffer.price.grandTotal}_${flightOffer.price.currency}_${flightOffer.itineraries[0].duration}_${flightOffer.lastTicketingDate}`;
+                    let hiddenURL = `?origin=${origin}&destination=${destination}&departureDate=${departureDate}&prezzo=${flightOffer.price.grandTotal}&amp;currency=${flightOffer.price.currency}&durata=${flightOffer.itineraries[0].duration}&disponib=${flightOffer.lastTicketingDate}`;
+                    if(user.mete.includes(metaID)) {
+                        html += `
+                                <div class="isFavourite" align="right">
+                                    TOGLI DAI PREFERITI
+                                    <span class="fa fa-star checked"></span>
+                                </div>
+                                <p hidden>${hiddenURL}</p>
                              </div>`;
+                    }
+                    else {
+                        html += `
+                                <div class="notFavourite" align="right">
+                                    AGGIUNGI AI PREFERITI
+                                    <span class="fa fa-star checked"></span>
+                                </div>
+                                <p hidden>${hiddenURL}</p>
+                             </div>`;
+                    }
                     html += `</div>`;
-//                    <p class="details" data-target="#itinerary_modal" data-toggle="modal" id="${flightOffer.id}">VEDI I DETTAGLI</p>
-
-
                 }
                 $("#table").append(html);
+
+                $(".isFavourite").click(function() {
+                    let meta_id = $(this).next("p").text().substring(1).split("&").map(x=>x.split("=")[1]).reduce((a,b)=>a+"_"+b);
+                    $.ajax({
+                        type: "GET",
+                        url: "https://localhost:3000/preferito_rimuovi"+$(this).next("p").text()+`&user=${user._id}&meta_id=${meta_id}`,
+                        success: function(d) {
+                            $.ajax({
+                                type: "GET",
+                                url: "https://localhost:3000/profilo_dati",
+                                success: function(data) {
+                                    user = data;
+                                    data2Flights(flightOffers);
+                                },
+                                error: function() {
+                                    alert("Errore");
+                                }
+                            });
+                        },
+                        error: function() {
+                            alert("Errore");
+                        }
+                    });
+                });
+
+                $(".notFavourite").click(function() {
+                    let meta_id = $(this).next("p").text().substring(1).split("&").map(x=>x.split("=")[1]).reduce((a,b)=>a+"_"+b);
+                    $.ajax({
+                        type: "GET",
+                        url: "https://localhost:3000/preferito_aggiungi"+$(this).next("p").text()+`&user=${user._id}&meta_id=${meta_id}`,
+                        success: function(d) {
+                            $.ajax({
+                                type: "GET",
+                                url: "https://localhost:3000/profilo_dati",
+                                success: function(data) {
+                                    user = data;
+                                    data2Flights(flightOffers);
+                                },
+                                error: function() {
+                                    alert("Errore");
+                                }
+                            });
+                        },
+                        error: function() {
+                            alert("Errore");
+                        }
+                    });
+                });
 
                 $("#sort_by_price").click(function() {
                     let sorted_data = flightOffers.sort(function(a,b) {
