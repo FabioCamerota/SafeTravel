@@ -38,8 +38,8 @@ var amadeus = new Amadeus({
 var client_id = process.env.CLIENT_ID_FB;
 var client_secret = process.env.CLIENT_SECRET_FB;
 
-var userdb = 'http://admin:admin@couchdb:5984/users/';
-var itinerariesdb = 'http://admin:admin@couchdb:5984/itineraries/';
+var userdb = 'http://admin:admin@localhost:5984/users/';
+var itinerariesdb = 'http://admin:admin@localhost:5984/itineraries/';
 
 const GADB = fs.readFileSync('GlobalAirportDatabase.txt').toString().split("\n").map(function(v) {
 	let values = v.split(":");
@@ -426,17 +426,17 @@ httpServer.listen(port, function() {
 	Vedere come funzionano web socket
 */
 
-//'http://admin:admin@couchdb:5984/users/'
+//'http://admin:admin@localhost:5984/users/'
 //COUCHDB: http://127.0.0.1:5984/_utils/#login
 app.get('/testcreateCRUD', function(req,res) {
-	//INSERISCO NEL SEGUENTE DATABASE: http://admin:admin@couchdb:5984/users/
+	//INSERISCO NEL SEGUENTE DATABASE: http://admin:admin@localhost:5984/users/
 	var obj = {
 		"id": 1213123,
 		"token": "tokentest",
 		"nome": "NOME",
 		"mete": []
 	};
-	createCRUD('http://admin:admin@couchdb:5984/users/',obj).then(function(response) {
+	createCRUD('http://admin:admin@localhost:5984/users/',obj).then(function(response) {
 		console.log(response);
 		res.send(response);
 	}).catch(function(err) {
@@ -446,14 +446,14 @@ app.get('/testcreateCRUD', function(req,res) {
 });
 
 app.get('/testreadCRUD', function(req,res) {
-	//INSERISCO NEL SEGUENTE DATABASE: http://admin:admin@couchdb:5984/users/
+	//INSERISCO NEL SEGUENTE DATABASE: http://admin:admin@localhost:5984/users/
 	var obj = {
 		"id": 1213123,
 		"token": "tokentest",
 		"nome": "NOME",
 		"mete": []
 	};
-	readCRUD('http://admin:admin@couchdb:5984/users/',obj).then(function(response) {
+	readCRUD('http://admin:admin@localhost:5984/users/',obj).then(function(response) {
 		console.log(response);
 		res.send(response);
 	}).catch(function(err) {
@@ -463,14 +463,14 @@ app.get('/testreadCRUD', function(req,res) {
 });
 
 app.get('/testupdateCRUD', function(req,res) {
-	//INSERISCO NEL SEGUENTE DATABASE: http://admin:admin@couchdb:5984/users/
+	//INSERISCO NEL SEGUENTE DATABASE: http://admin:admin@localhost:5984/users/
 	var obj = {
 		"id": 1213123,
 		"token": "tokentest MODIFICATO UPDATATO",
 		"nome": "NOME",
 		"mete": []
 	};
-	updateCRUD('http://admin:admin@couchdb:5984/users/',obj).then(function(response) {
+	updateCRUD('http://admin:admin@localhost:5984/users/',obj).then(function(response) {
 		console.log(response);
 		res.send(response);
 	}).catch(function(err) {
@@ -480,14 +480,14 @@ app.get('/testupdateCRUD', function(req,res) {
 });
 
 app.get('/testdeleteCRUD', function(req,res) {
-	//INSERISCO NEL SEGUENTE DATABASE: http://admin:admin@couchdb:5984/users/
+	//INSERISCO NEL SEGUENTE DATABASE: http://admin:admin@localhost:5984/users/
 	var obj = {
 		"id": 1213123,
 		"token": "tokentest",
 		"nome": "NOME",
 		"mete": []
 	};
-	deleteCRUD('http://admin:admin@couchdb:5984/users/',obj).then(function(response) {
+	deleteCRUD('http://admin:admin@localhost:5984/users/',obj).then(function(response) {
 		console.log(response);
 		res.send(response);
 	}).catch(function(err) {

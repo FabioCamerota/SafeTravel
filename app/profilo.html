@@ -18,6 +18,21 @@
         
         <!--STILI PERSONALIZZATI-->
         <style>
+            .itinerario {
+                margin: 0.5%;
+                border-radius: 1vw;
+                background-repeat:no-repeat;
+                background-position: center center;
+            } 
+            .itinerario:hover {
+                background-color: rgb(237, 238, 248); 
+            }
+            .details {
+                float: right; 
+                cursor: pointer; 
+                color: blue; 
+                text-decoration: underline;
+            }
             .loader {
                 position: relative;
                 display: block;
@@ -50,6 +65,9 @@
     </header>
     <body onload="caricaDatiUtente()">
         <h2>BENTORNATO</h2>
+
+        <div id="table"></div>
+
         <script>
 
             var GADB;
@@ -80,6 +98,39 @@
                     url: "https://localhost:3000/profilo_dati",
                     success: function(data) {
                         $("h2").append(" "+data.nome.toUpperCase());
+                        let html = "";
+                        for(let i = 0; i < data.mete.length; i++) {
+                            let dettagliMeta = data.mete[i].split("_");
+
+                            html += `<div class="list-group-item itinerario">`;
+                            html += `<h4 class="list-group-item-heading" style="font-weight: bold;">${dettagliMeta[0]}-${dettagliMeta[1]}`;
+                            html += `<b style="float: right;">${new Intl.NumberFormat('it-IT', { style: 'currency', currency: "EUR" }).format(dettagliMeta[3])}</b></h4>`;
+                            html += `<div class="list-group-item-text">
+                                PRENOTAZIONI DISPONIBILI FINO AL <b>${dettagliMeta[5]}</b><br/>
+                                DURATA DELL'ITINERARIO: <b>${dettagliMeta[4]}</b>
+                                <a class="details" href="https://localhost:3000/meta_dettagli?origin=${dettagliMeta[0]}&destination=${dettagliMeta[1]}&departureDate=${dettagliMeta[2]}&prezzo=${dettagliMeta[3]}&durata=${dettagliMeta[4]}&disponib=${dettagliMeta[5]}" target="_blank">VEDI I DETTAGLI</a>
+                             </div>`;
+                            html += `</div>`;
+                        }
+                        $("#table").append(html);
+                    },
+                    error: function() {
+                        alert("Errore");
+                    }
+                });
+            }
+
+            function cercaItinerario(datiMeta) {
+                //origin=BKK&destination=AAR&departureDate=2021-08-01&prezzo=661.80&durata=PT18H45M&disponib=2021-06-30
+                let query = `?origin=${datiMeta[0]}&destination=${datiMeta[1]}&departureDate=${datiMeta[2]}&prezzo=${datiMeta[3]}&durata=${datiMeta[4]}&disponib=${datiMeta[5]}`;
+                $.ajax({
+                    type: "GET",
+                    url: "https://localhost:3000/profilo_dati",
+                    success: function(data) {
+                        $("h2").append(" "+data.nome.toUpperCase());
+                        for(let i = 0; i < data.mete.length; i++) {
+                            cercaItinerario(data.mete[i].split("_"));
+                        }
                     },
                     error: function() {
                         alert("Errore");
