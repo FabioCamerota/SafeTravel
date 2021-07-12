@@ -310,12 +310,12 @@ app.get('/preferito_rimuovi', function(req,res) {
 				"mete": new_itineraries
 			}
 
-		updateCRUD(userdb,user).then(function(res_updateu) { //...E AGGIORNO IL SUO ARRAY TOGLIENDO L'ITINERARIO.
-			console.log(req.session.user);
-			req.session.user.mete = new_itineraries;
-			console.log(req.session.user);
-		}).catch((err_updateu)=>console.log(err_updateu+246));
-	}).catch((err_readu)=>console.log(err_readu+247));
+			updateCRUD(userdb,user).then(function(res_updateu) { //...E AGGIORNO IL SUO ARRAY TOGLIENDO L'ITINERARIO.
+				console.log(req.session.user);
+				req.session.user.mete = new_itineraries;
+				console.log(req.session.user);
+			}).catch((err_updateu)=>console.log(err_updateu+246));
+		}).catch((err_readu)=>console.log(err_readu+247));
 	};
 
 	readCRUD(itinerariesdb, {"id": req.query.meta_id}).then(function(res_readi) { //L'ITINERARIO ESISTE IN DB...
