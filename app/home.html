@@ -7,20 +7,39 @@
         <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
     </header>
     <body>
+        <p>
+            Result :<output name="" type="text" id="result" value"readonly"></output>
+        </p>
+        <input type="text" onchange="ws.send(this.value);">
         <a href="https://localhost:3000/profilo">
             <button>il tuo profilo</button>
         </a>
-        <a href="https://localhost:3000/user_info">
-            <button>vedi mete proposte</button>
-        </a>
+        <button id="test">vedi mete proposte</button>
         <a href="https://localhost:3000/mete">
             <button>cerca una meta</button>
         </a>
         <div></div>
 
         <script>
-
-            
+            var ws = new WebSocket("wss://localhost:3000/");
+            function aux(){
+                $.ajax({
+                type: "GET",
+                url: "https://localhost:3000/vedi_mete_proposte",
+                success: function(data) {
+                        $("div").append(data);
+                    },
+                    error: function() {
+                        $("div").append("Errore");
+                    }
+                });
+            }
+            ws.onmessage=function(event){
+                aux();
+            }
+            $("#test").click(function(){
+                aux();
+            })
         </script>    
     </body>
 </html>

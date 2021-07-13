@@ -53,11 +53,7 @@ const GADB = fs.readFileSync('GlobalAirportDatabase.txt').toString().split("\n")
 });
 
 app.get('/', function(req,res) {
-	console.log(req.session);
-	console.log(req.sessionID);
 	if(typeof(req.session.user) != "undefined") {
-		console.log("QUERY: "+JSON.stringify(req.query));
-		console.log("SESSION: "+JSON.stringify(req.session));
 		res.sendFile("home.html",{root:__dirname});
 	}
 	else
@@ -65,7 +61,6 @@ app.get('/', function(req,res) {
 });
 
 app.get('/login', function(req,res) {
-	console.log("hoh");
 	res.redirect(`https://www.facebook.com/v10.0/dialog/oauth?response_type=code&scope=email&client_id=${client_id}&redirect_uri=https://localhost:3000/home&client_secret=${client_secret}`);
 });
 
@@ -88,8 +83,6 @@ app.get('/home', function(req,res) {
 				return console.error('Auth failed:', err);
 			}
 			var info = JSON.parse(body);
-			console.log("QUERY:"+JSON.stringify(req.query));
-			console.log("BODY:"+body);
 			if(info.error) {
 				res.redirect("/");
 			}
@@ -119,7 +112,6 @@ app.get('/home', function(req,res) {
 });
 
 app.get('/GADB', function(req,res) {
-	console.log("sent GADB");
 	res.send(GADB);
 });
 
@@ -128,15 +120,15 @@ app.get('/profilo', function(req, res) {
 });
 app.get('/test', ()=>console.log("test"));
 app.get('/profilo_dati', function(req, res) {
-	console.log(req.session);
-	console.log(req.session.user);
+	//console.log(req.session);
+	//console.log(req.session.user);
 	readCRUD(userdb,{"id":req.session.user._id}).then(function(res_readu) {
-		console.log("READU--------------------------------");
-		console.log(res_readu);
+		//console.log("READU--------------------------------");
+		//console.log(res_readu);
 		req.session.user = res_readu;
-		console.log("ASESSIONUSER--------------------------------");
-		console.log(req.session.user);
-		console.log("SENT DATA, DONE!--------------------------------");
+		//console.log("ASESSIONUSER--------------------------------");
+		//console.log(req.session.user);
+		//console.log("SENT DATA, DONE!--------------------------------");
 		res.send(req.session.user);
 	}).catch((err)=>console.log(err));
 });
@@ -146,7 +138,6 @@ app.get('/mete', function(req,res) {
 });
 
 app.get('/cerca_itinerari', function(req,res) {
-	console.log(req.query);
 
 	cercaItinerari(req.query.origin,req.query.destination,req.query.departureDate).then(function(response){
 		if(response.data.length == 0)
@@ -177,7 +168,6 @@ app.get('/meta_dettagli', function(req,res) {
 });
 
 app.get('/meta_dettagli_data', function(req,res) {
-	console.log(req.query);
 	cercaItinerari(req.query.origin,req.query.destination,req.query.departureDate).then(function(response){
 		if(response.data.length == 0)
 			res.send("Nessun itinerario trovato");
@@ -196,7 +186,6 @@ app.get('/meta_dettagli_data', function(req,res) {
 });
 
 app.get('/photo', function(req,res) {
-	console.log(req.query);
 	let place = req.query.place;
 	image_search({ 
 		query: place, 
@@ -217,7 +206,6 @@ app.get('/photo', function(req,res) {
 
 app.get('/airline_data', function(req,res) {
 	var code = req.query.code;
-	console.log(code);
 	/*
 	amadeus.referenceData.airlines.get({
 		airlineCodes : code
@@ -239,7 +227,6 @@ app.get('/airline_data', function(req,res) {
 	
 	//TESTING MODE:
 	var data = JSON.parse(fs.readFileSync('test_airline_data.json'));
-	console.log(data);
 	res.send(data);
 });
 
@@ -306,7 +293,6 @@ app.get('/preferito_rimuovi', function(req,res) {
 
 			index = new_itineraries.indexOf(req.query.meta_id);				
 			new_itineraries.splice(index,1);					//creo nuovo array senza meta che utente ha eliminato
-			console.log(new_itineraries);
 
 			let user = {
 				"id": res_readu._id,
@@ -316,7 +302,6 @@ app.get('/preferito_rimuovi', function(req,res) {
 			}
 
 			updateCRUD(userdb,user).then(function(res_updateu) { //...E AGGIORNO IL SUO ARRAY TOGLIENDO L'ITINERARIO.
-				console.log(req.session.user);
 				req.session.user.mete = new_itineraries;
 				console.log(req.session.user);
 				res.send("useless data");
@@ -389,16 +374,16 @@ const httpServer = https.createServer(options, app);
 
 //Inizio WEBSOCKET
 const ws = new WebSocket.Server({ server: httpServer });
+
+/*
 CLIENTS=[];
 ws.on('connection', function(conn) {
 	CLIENTS.push(conn);
 	conn.on('message', function(message) {
-	console.log('received:  %s', message);
-	sendAll(message);
+		console.log('received:  %s', message);
+		sendAll(message);
+	});
 
-});
-
-console.log("new connection");
 	conn.send("NUOVO CLIENTE CONNESSO");
 
 	conn.on('close', function() {
@@ -415,6 +400,38 @@ for (var i=0; i<CLIENTS.length; i++) {
  CLIENTS[i].send("Messaggio per il client "+j+": "+message);
 }
 }
+*/
+CLIENTS=[];
+ws.on('connection', function(conn) {
+	CLIENTS.push(conn);
+	console.log("connessione open");
+	conn.on('message', function(message) {
+		console.log('ricevuto:  %s', message);
+		sendAll(message);
+	});
+
+	conn.on('close', function() {
+		console.log("connection closed");
+		CLIENTS.splice(CLIENTS.indexOf(conn), 1);
+	});
+
+});
+
+function sendAll (message) {
+	for (var i=0; i<CLIENTS.length; i++) {
+	 var j=i+1;
+	 CLIENTS[i].send("Messaggio per il client "+j+": "+message);
+	}
+}
+
+app.get('/vedi_mete_proposte', function(req,res) {
+	readCRUD(itinerariesdb, {"id": "_all_docs"}).then(function(res_readi) {
+		res.send(JSON.stringify(res_readi.total_rows));
+	}).catch(function(err_readi) {
+		res.send(err_readi);
+	});
+	
+});
 //Fine WEBSOCKET
 
 httpServer.listen(port, function() { 
@@ -431,73 +448,6 @@ httpServer.listen(port, function() {
 
 //'http://admin:admin@localhost:5984/users/'
 //COUCHDB: http://127.0.0.1:5984/_utils/#login
-app.get('/testcreateCRUD', function(req,res) {
-	//INSERISCO NEL SEGUENTE DATABASE: http://admin:admin@localhost:5984/users/
-	var obj = {
-		"id": 1213123,
-		"token": "tokentest",
-		"nome": "NOME",
-		"mete": []
-	};
-	createCRUD('http://admin:admin@localhost:5984/users/',obj).then(function(response) {
-		console.log(response);
-		res.send(response);
-	}).catch(function(err) {
-		console.log(err);
-		res.send(err);
-	});
-});
-
-app.get('/testreadCRUD', function(req,res) {
-	//INSERISCO NEL SEGUENTE DATABASE: http://admin:admin@localhost:5984/users/
-	var obj = {
-		"id": 1213123,
-		"token": "tokentest",
-		"nome": "NOME",
-		"mete": []
-	};
-	readCRUD('http://admin:admin@localhost:5984/users/',obj).then(function(response) {
-		console.log(response);
-		res.send(response);
-	}).catch(function(err) {
-		console.log(err);
-		res.send(err);
-	});
-});
-
-app.get('/testupdateCRUD', function(req,res) {
-	//INSERISCO NEL SEGUENTE DATABASE: http://admin:admin@localhost:5984/users/
-	var obj = {
-		"id": 1213123,
-		"token": "tokentest MODIFICATO UPDATATO",
-		"nome": "NOME",
-		"mete": []
-	};
-	updateCRUD('http://admin:admin@localhost:5984/users/',obj).then(function(response) {
-		console.log(response);
-		res.send(response);
-	}).catch(function(err) {
-		console.log(err);
-		res.send(err);
-	});
-});
-
-app.get('/testdeleteCRUD', function(req,res) {
-	//INSERISCO NEL SEGUENTE DATABASE: http://admin:admin@localhost:5984/users/
-	var obj = {
-		"id": 1213123,
-		"token": "tokentest",
-		"nome": "NOME",
-		"mete": []
-	};
-	deleteCRUD('http://admin:admin@localhost:5984/users/',obj).then(function(response) {
-		console.log(response);
-		res.send(response);
-	}).catch(function(err) {
-		console.log(err);
-		res.send(err);
-	});
-});
 
 function createCRUD(db,obj) {
 	let toinsert = {};
@@ -513,13 +463,11 @@ function createCRUD(db,obj) {
 				resolve(obj);
 			} else if(res.statusCode == 409) {//Elemento già presente
 				console.log(error);
-				console.log(res.statusCode, body);
 				reject("Elemento già presente");
 				updateCRUD(db,obj);
 			}
 			else {
 				console.log(error);
-				console.log(res.statusCode, body);
 				reject("Errore, codice: "+res.statusCode);
 			}
 		});

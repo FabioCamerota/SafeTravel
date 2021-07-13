@@ -84,7 +84,7 @@
         <div id="table"></div>
 
         <script>
-
+            var ws = new WebSocket("wss://localhost:3000/");
             n =  new Date();
             y = n.getFullYear();
             m = n.getMonth() + 1; if(m < 10) m = "0"+m;
@@ -224,6 +224,7 @@
                         type: "GET",
                         url: "https://localhost:3000/preferito_rimuovi"+$(this).next("p").text()+`&user=${user._id}&meta_id=${meta_id}`,
                         success: function(d) {
+                            ws.send("aggiorna");
                             $.ajax({
                                 type: "GET",
                                 url: "https://localhost:3000/profilo_dati",
@@ -248,6 +249,7 @@
                         type: "GET",
                         url: "https://localhost:3000/preferito_aggiungi"+$(this).next("p").text()+`&user=${user._id}&meta_id=${meta_id}`,
                         success: function(d) {
+                            ws.send("aggiorna");
                             $.ajax({
                                 type: "GET",
                                 url: "https://localhost:3000/profilo_dati",
