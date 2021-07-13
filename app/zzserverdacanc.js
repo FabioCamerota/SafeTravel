@@ -126,7 +126,7 @@ app.get('/GADB', function(req,res) {
 app.get('/profilo', function(req, res) {
 	res.sendFile("profilo.html",{root:__dirname});
 });
-
+app.get('/test', ()=>console.log("test"));
 app.get('/profilo_dati', function(req, res) {
 	console.log(req.session);
 	console.log(req.session.user);
@@ -161,7 +161,19 @@ app.get('/cerca_itinerari', function(req,res) {
 });
 
 app.get('/meta_dettagli', function(req,res) {
-	res.sendFile("meta_dettagli.html",{root:__dirname});
+	console.log(req.session);
+	console.log(req.sessionID);
+	console.log(req.session.user);
+	console.log("TIPO-------------");
+	console.log(typeof(req.session.user));
+	console.log("TIPO-------------");
+	if(typeof(req.session.user) != "undefined") {
+		console.log("QUERY: "+JSON.stringify(req.query));
+		console.log("SESSION: "+JSON.stringify(req.session));
+		res.sendFile("meta_dettagli.html",{root:__dirname});
+	}
+	else
+		res.sendFile("accesso.html",{root:__dirname});
 });
 
 app.get('/meta_dettagli_data', function(req,res) {
