@@ -64,14 +64,16 @@
         </style>
     </header>
     <body onload="caricaItinerario()">
-        <div id="itinerario">dsa</div>
+        <div id="itinerario"></div>
+        <div class="content-save" align="center"></div>
         <div id="loading"><div class="loader"></div></div>
+
 
         <script>
             var ws = new WebSocket("wss://localhost:3000/");
             var user;
             var GADB;
-            var elements2load = 3;
+            var elements2load = 4;
 
             $.ajax({
                 type: "GET",
@@ -148,16 +150,19 @@
 
                             <div class="content-photos" align="center"></div>
                             <div class="content-airline" align="center"></div>
-                            <div class="content-save" align="center"></div>
                             <p>${JSON.stringify(data)}</p>
                         `);
 
                         if(--elements2load <= 0) $("#loading").html("");
 
-                        photosSearch(allcities);
+                        mainBody(allcities, data.itineraries[0].segments.map(function(x) {
+                            let obj = {
+                                "info": x,
+                                "fares": data.travelerPricings[0].fareDetailsBySegment.find(y=>y.segmentId==x.id)
+                            }
+                            return obj;
+                        }));
                         airlineSearch(data.validatingAirlineCodes[0]);
-
-                        //origin=BKK&destination=AAR&departureDate=2021-08-01&prezzo=479.11&currency=EUR&durata=PT18H35M&disponib=2021-08-01
                         let meta_id = window.location.search.substring(1).split("&").map(x=>x.split("=")[1]).reduce((a,b)=>a+"_"+b);
                         isSaved(meta_id);
                     },
@@ -167,7 +172,7 @@
                 });
             }
 
-            function photosSearch(allcities) {
+            function mainBody(allcities, itineraryData) {
                 var ris = [];
                 for(let i = 0; i < allcities.length; i++) {
                     $.ajax({
@@ -175,6 +180,8 @@
                         url: `https://localhost:3000/photo?place=${allcities[i]}`,
                         success: function(data) {
                             ris.push({
+                                "city": allcities[i],
+                                "country": allcities[i].split(" ")[1].replace("(","").replace(")",""),
                                 "num": i,
                                 "url": data
                             });
@@ -185,15 +192,34 @@
                                 });
 
                                 for(let j = 0; j < ris.length; j++) {
+                                    let data2append = JSON.stringify(itineraryData[j]);
+
+                                    if(typeof(data2append) != "undefined") {
+                                        data2append = `
+                                            <p>${JSON.stringify(itineraryData[j].info)}</p>
+                                            <p>${JSON.stringify(itineraryData[j].fares)}</p>
+                                        
+                                        `;//JSON.stringify(itineraryData[j])
+                                    }
+                                    
                                     $("#itinerario .content-photos").append(`
-                                        <div class="modal-photo" style="background-image: url('${ris[j].url}')"></div>
-                                        <br/>
-                                        <p><b>${allcities[j]}</b></p>
-                                        <div class="fa fa-angle-double-down"></div>
-                                        <br/>
+                                        <div class="container-fluid" style="vertical-align: middle;">
+                                            <div class="row ${ris[j].country}">
+                                                <div class="col-md-4">
+                                                    ${data2append}
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <div class="modal-photo" style="background-image: url('${ris[j].url}')"></div>
+                                                    <br/>
+                                                    <p><b>${allcities[j]}</b></p>
+                                                    <div class="fa fa-angle-double-down"></div>
+                                                    <br/>
+                                                </div>
+                                            </div>
+                                        </div>
                                     `);
                                 }
-
+                                covidData(allcities.map(x=>x.split(" ")[1].replace("(","").replace(")","")));
                                 if(--elements2load <= 0) $("#loading").html("");
                             }
                         },
@@ -210,17 +236,22 @@
                     url: `https://localhost:3000/airline_data?code=${code}`,
                     success: function(data) {
                         $("#itinerario .content-airline").html("");
-                        $("#itinerario .content-airline").append(`
-                            <p>ITINERARIO GESTITO DA ${data.airline[0].businessName} <a href="${data.urls.filter(v=>v.channel=="Web" || v.channel=="All")[0].href}" target="_blank">CLICCA QUI PER PRENOTARE!</a></p>
-                        `);
 
+                        let url = data.urls.filter(v=>v.channel=="Web" || v.channel=="All")[0].href;
+                        let company = data.airline[0].businessName;
 
                         $.ajax({
                             type: "GET",
-                            url: `https://localhost:3000/photo?place=${data.airline[0].businessName} company logo render`,
+                            url: `https://localhost:3000/photo?place=${company} company logo render`,
                             success: function(data) {
                                 $("#itinerario .content-airline").append(`
-                                    <img width="150px" src=${data}>
+                                    <p>ITINERARIO GESTITO DA ${company}</p>
+                                    <a href="${url}" target="_blank">
+                                        <img width="150px" src=${data}>
+                                        <br/>
+                                        PRENOTA SUBITO!
+                                    </a>
+
                                 `);
                                 if(--elements2load <= 0) $("#loading").html("");
                             },
@@ -239,7 +270,7 @@
                 if(user == "") return;                
                 let mete = user.mete;
                 if(mete.includes(meta_id)) {
-                    $("#itinerario .content-save").html(`
+                    $(".content-save").html(`
                         <div class="isFavourite" align="right">
                             <span class="fa fa-star checked"></span>
                             TOGLI DAI PREFERITI
@@ -248,7 +279,7 @@
                     `);
                 }
                 else {
-                    $("#itinerario .content-save").html(`
+                    $(".content-save").html(`
                         <div class="notFavourite" align="right">
                             <span class="fa fa-star checked"></span>
                             AGGIUNGI AI PREFERITI
@@ -307,7 +338,35 @@
                 
             }
 
+            function covidData(allcountries) {
+                $.ajax({
+                    type: "GET",
+                    url: `https://localhost:3000/covid`,
+                    contentType: 'application/json',
+                    data: {"countries": allcountries},
+                    success: function(data) {
+                        $("#itinerario").append(JSON.stringify(data));
+                        for(let i = 0; i < data.length; i++) {
 
+                            let data2append = `
+                                <p>CASI ATTIVI: ${data[i].activeCases}</p>
+                                <p>DATO AGGIORNATO IL: ${data[i].lastUpdated}</p>
+                            
+                            `;//JSON.stringify(data[i])
+
+                            $(`.${data[i].country.toUpperCase()}`).append(`
+                                <div class="col-md-4">
+                                    ${data2append}
+                                </div>
+                            `);
+                        }
+                        if(--elements2load <= 0) $("#loading").html("");
+                    },
+                    error: function() {
+                        alert("Errore");
+                    }
+                });
+            }
         </script>    
     </body>
 </html>

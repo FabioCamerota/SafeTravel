@@ -130,7 +130,25 @@
 
             $("#cerca_itinerari").click(function() {                
 			    $("#table").html(`<div class="loader"></div>`);
-                var httpRequest = new XMLHttpRequest();                
+                var origin = GADB.filter(v=>`${v.city} (${v.country})`==document.mainform.origin.value && v.IATA != "N/A")[0].IATA;
+                var destination = GADB.filter(v=>`${v.city} (${v.country})`==document.mainform.destination.value && v.IATA != "N/A")[0].IATA;
+                
+                $.ajax({
+                    type: "GET",
+                    url: `https://localhost:3000/cerca_itinerari?origin=${origin}&destination=${destination}&departureDate=${document.mainform.departureDate.value}`,
+                    success: function(data) {
+                        if(data == "Nessun itinerario trovato")
+                            $("#table").html("Nessun itinerario trovato");
+                        else
+                            data2Flights(JSON.parse(data));
+                    },
+                    error: function() {
+                        $("#table").html("Nessun itinerario trovato");
+//                        alert("Errore");
+                    }
+                });
+                
+                /*var httpRequest = new XMLHttpRequest();                
                 httpRequest.onreadystatechange = function(e) {
                     if (e.target.readyState == XMLHttpRequest.DONE){
                         data2Flights(JSON.parse(e.target.responseText));
@@ -142,6 +160,7 @@
 
 		    	httpRequest.open("GET",`https://localhost:3000/cerca_itinerari?origin=${origin}&destination=${destination}&departureDate=${document.mainform.departureDate.value}`,true);
 	    		httpRequest.send();
+                */
             });
 
 

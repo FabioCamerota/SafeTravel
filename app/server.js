@@ -7,7 +7,6 @@ const https = require('https');
 const cors = require('cors');
 const Amadeus = require('amadeus');
 const { image_search, image_search_generator } = require("duckduckgo-images-api");
-const { response } = require('express');
 const WebSocket = require('ws');
 
 var app = express(); // Express configuration
@@ -139,6 +138,7 @@ app.get('/mete', function(req,res) {
 
 app.get('/cerca_itinerari', function(req,res) {
 
+	
 	cercaItinerari(req.query.origin,req.query.destination,req.query.departureDate).then(function(response){
 		if(response.data.length == 0)
 			res.send("Nessun itinerario trovato");
@@ -146,13 +146,16 @@ app.get('/cerca_itinerari', function(req,res) {
 			res.send(JSON.stringify(response.data));
 	}).catch(function(responseError){
 		console.log(responseError.code);
+		console.log(responseError);
+		console.log("------------------");
+		console.log(req.query);
 		res.send("Errore nel server");
 	});
 
 });
 
 app.get('/meta_dettagli', function(req,res) {
-	console.log(req.session);
+/*	console.log(req.session);
 	console.log(req.sessionID);
 	console.log(req.session.user);
 	console.log("TIPO-------------");
@@ -165,6 +168,8 @@ app.get('/meta_dettagli', function(req,res) {
 	}
 	else
 		res.sendFile("accesso.html",{root:__dirname});
+*/
+	res.sendFile("meta_dettagli.html",{root:__dirname});
 });
 
 app.get('/meta_dettagli_data', function(req,res) {
@@ -182,6 +187,17 @@ app.get('/meta_dettagli_data', function(req,res) {
 	}).catch(function(responseError){
 		console.log(responseError.code);
 		res.send("Errore nel server");
+	});
+});
+
+app.get('/covid', function(req,res) {
+	request.get({url:"http://api.coronatracker.com/v3/stats/worldometer/country"}, function(err1, res1, body1) {
+		if(err1) {
+			res.send("Errore di richiesta dati");
+		}
+		else {
+			res.send(JSON.parse(body1).filter(x=>req.query.countries.includes(x.countryName.toUpperCase())));
+		}
 	});
 });
 
@@ -358,9 +374,10 @@ function cercaItinerari(origin, destination, departureDate) {
 			destinationLocationCode: destination,
 			departureDate: departureDate,
 			adults: '1'
-		});*/
-	
+		});
+	*/
 	//TESTING MODE:
+	
 	var data = JSON.parse(fs.readFileSync('test_cerca_itinerari.json'));
 	return new Promise(function(resolve,reject) {
 		if(data.length > 0)
@@ -375,32 +392,6 @@ const httpServer = https.createServer(options, app);
 //Inizio WEBSOCKET
 const ws = new WebSocket.Server({ server: httpServer });
 
-/*
-CLIENTS=[];
-ws.on('connection', function(conn) {
-	CLIENTS.push(conn);
-	conn.on('message', function(message) {
-		console.log('received:  %s', message);
-		sendAll(message);
-	});
-
-	conn.send("NUOVO CLIENTE CONNESSO");
-
-	conn.on('close', function() {
-	  console.log("connection closed");
-	  CLIENTS.splice(CLIENTS.indexOf(conn), 1);
-	});
-
-});
-
-//send messeages vers all clients
-function sendAll (message) {
-for (var i=0; i<CLIENTS.length; i++) {
- var j=i+1;
- CLIENTS[i].send("Messaggio per il client "+j+": "+message);
-}
-}
-*/
 CLIENTS=[];
 ws.on('connection', function(conn) {
 	CLIENTS.push(conn);
@@ -414,40 +405,20 @@ ws.on('connection', function(conn) {
 		console.log("connection closed");
 		CLIENTS.splice(CLIENTS.indexOf(conn), 1);
 	});
-
 });
 
 function sendAll (message) {
 	for (var i=0; i<CLIENTS.length; i++) {
-	 var j=i+1;
-	 CLIENTS[i].send("Messaggio per il client "+j+": "+message);
+		var j=i+1;
+		CLIENTS[i].send("Messaggio per il client "+j+": "+message);
 	}
 }
 
-app.get('/vedi_mete_proposte', function(req,res) {
-	readCRUD(itinerariesdb, {"id": "_all_docs"}).then(function(res_readi) {
-		res.send(JSON.stringify(res_readi.total_rows));
-	}).catch(function(err_readi) {
-		res.send(err_readi);
-	});
-	
-});
 //Fine WEBSOCKET
 
 httpServer.listen(port, function() { 
     console.log(`In ascolto sulla porta ${port}`);
 });
-
-//Priorità
-/*
-	Integrare oauth
-	Operazioni CRUD per couchdb
-	Coronatracker
-	Vedere come funzionano web socket
-*/
-
-//'http://admin:admin@couchdb:5984/users/'
-//COUCHDB: http://127.0.0.1:5984/_utils/#login
 
 function createCRUD(db,obj) {
 	let toinsert = {};
@@ -536,6 +507,36 @@ function deleteCRUD(db,obj) {
 // SEZIONE --- API TERZE
 app.get("/api",function(req,res){
 	res.sendFile("./public/api.html",{root:__dirname});
+});
+
+app.get("/api/tuttiItinerari",function(req,res){
+	readCRUD(itinerariesdb, {"id": "_all_docs"}).then(function(res_readi) {
+		let tosend = {"itineraries": []};
+		for(let i = 0; i < res_readi.total_rows; i++) {
+			readCRUD(itinerariesdb, {"id": res_readi.rows[i].id}).then(function(res_readi1) {
+				tosend.itineraries.push(
+					{
+						"id": res_readi1._id,
+						"origin": res_readi1.origin,
+						"destination": res_readi1.destination,
+						"departureDate": res_readi1.departureDate,
+						"price": res_readi1.price,
+						"currency": res_readi1.currency,
+						"duration": res_readi1.duration,
+						"lastTicketingDate": res_readi1.lastTicketingDate,
+						"userN": res_readi1.userN
+					}
+				);
+				if(tosend.itineraries.length == res_readi.total_rows)
+					res.send(tosend);
+			}).catch(function(err_readi1) {
+				console.log(err_readi1);
+			});
+		}
+	}).catch(function(err_readi) {
+		console.log(err_readi);
+		res.send(tosend);
+	});
 });
 
 //Api terze di prova

@@ -4,13 +4,51 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Home</title>
+
+
+        <!--JQUERY-->
         <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+
+        <!--BOOSTRAP-->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+
+        <!--FONT AWESOME-->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+        
+        <!--STILI PERSONALIZZATI-->
+        <style>
+            .itinerario {
+                margin: 0.5%;
+                border-radius: 1vw;
+                background-repeat:no-repeat;
+                background-position: center center;
+            } 
+            .itinerario:hover {
+                background-color: rgb(237, 238, 248); 
+            }
+            .details {
+                float: right; 
+                cursor: pointer; 
+                color: blue; 
+                text-decoration: underline;
+            }
+            .isFavourite {
+                color: orange;
+                cursor: pointer;
+            }
+            .isFavourite:hover {
+                color: black;
+                cursor: pointer;
+            }
+            .notFavourite:hover {
+                color: orange;
+                cursor: pointer;
+            }
+        </style>
     </header>
     <body>
-        <p>
-            Result :<output name="" type="text" id="result" value"readonly"></output>
-        </p>
-        <input type="text" onchange="ws.send(this.value);">
         <a href="https://localhost:3000/profilo">
             <button>il tuo profilo</button>
         </a>
@@ -18,28 +56,158 @@
         <a href="https://localhost:3000/mete">
             <button>cerca una meta</button>
         </a>
-        <div></div>
+        <div id="table"></div>
 
         <script>
+
             var ws = new WebSocket("wss://localhost:3000/");
-            function aux(){
-                $.ajax({
+            var GADB;
+            var user;
+
+            $.ajax({
                 type: "GET",
-                url: "https://localhost:3000/vedi_mete_proposte",
-                success: function(data) {
-                        $("div").append(data);
+                url: "https://localhost:3000/GADB",
+                async: false,
+                success: function (data) {
+                    GADB = data;
+                    arr = data.filter(v=>v.IATA!=`N/A`)
+                        .map(v=>`${v.city} (${v.country})`)
+                        .filter((v, i, a) => a.indexOf(v) === i)
+                        .sort();
+                    for(let i = 0; i < arr.length; i++) {
+                        if(arr[i] == undefined) continue;
+                        var city = arr[i];
+                        $("#suggestions").append(`<option value="${city}">`);
+                    }
+                },
+                error: function() {
+                    alert("Errore");
+                }
+            });
+
+            function caricaDatiItinerari() {
+                $.ajax({
+                    type: "GET",
+                    url: "https://localhost:3000/api/tuttiItinerari",
+                    success: function(data) {
+                        caricaDatiUtente(data.itineraries);
                     },
                     error: function() {
-                        $("div").append("Errore");
+                        $("#table").html("Errore");
+                    }
+                });
+            }            
+
+            ws.onmessage= function(event){
+                caricaDatiItinerari();
+            }
+
+            $("#test").click(caricaDatiItinerari);
+
+            function caricaDatiUtente(itineraries) {
+
+
+                $.ajax({
+                    type: "GET",
+                    url: "https://localhost:3000/profilo_dati",
+                    success: function(data) {
+                        user = data;
+                        let html = "";
+
+                        for(let i = 0; i < itineraries.length; i++) {
+
+                            //origin=BKK&destination=AAR&departureDate=2021-08-01&prezzo=479.11&currency=EUR&durata=PT18H35M&disponib=2021-08-01
+                            let dettagliMeta = itineraries[i].id.split("_");            
+                            let hiddenURL = `?origin=${dettagliMeta[0]}&destination=${dettagliMeta[1]}&departureDate=${dettagliMeta[2]}&prezzo=${dettagliMeta[3]}&amp;currency=${dettagliMeta[4]}&durata=${dettagliMeta[5]}&disponib=${dettagliMeta[6]}`;
+                            //{"IATA":"GKA","airport":"GOROKA","city":"GOROKA","country":"PAPUA NEW GUINEA"}
+
+                            let origin = GADB.filter(v=>v.IATA==dettagliMeta[0])[0];
+                            origin = origin.city+" ("+origin.country+")";
+
+                            let destination = GADB.filter(v=>v.IATA==dettagliMeta[1])[0];
+                            destination = destination.city+" ("+destination.country+")";
+
+                            html += `<div class="list-group-item itinerario">`;
+                            html += `<h4 class="list-group-item-heading" style="font-weight: bold;">
+                                <div class="fa fa-plane"></div>
+                                ${origin}
+                                <div class="fa fa-angle-double-right"></div>
+                                <div class="fa fa-angle-double-right"></div>
+                                <div class="fa fa-angle-double-right"></div> 
+                                ${destination}
+                                <div class="fa fa-plane"></div>`;
+                            html += `<b style="float: right;">${new Intl.NumberFormat('it-IT', { style: 'currency', currency: dettagliMeta[4] }).format(dettagliMeta[3])}</b></h4>`;
+                            html += `<div class="list-group-item-text">
+                                PRENOTAZIONI DISPONIBILI FINO AL <b>${dettagliMeta[6]}</b><br/>
+                                DURATA DELL'ITINERARIO: <b>${dettagliMeta[5]}</b>
+                                <a class="details" href="https://localhost:3000/meta_dettagli${hiddenURL}" target="_blank">VEDI I DETTAGLI</a>
+                                <br/>`
+                            
+                            if(user.mete.includes(itineraries[i].id)) {
+                                html += `
+                                    <div class="isFavourite" align="right">
+                                        TOGLI DAI PREFERITI
+                                        <span class="fa fa-star checked"></span>
+                                    </div>
+                                    <p hidden>${hiddenURL}</p>
+                                </div>`;
+                            }
+                            else {
+                                html += `
+                                    <div class="notFavourite" align="right">
+                                        AGGIUNGI AI PREFERITI
+                                        <span class="fa fa-star checked"></span>
+                                    </div>
+                                    <p hidden>${hiddenURL}</p>
+                                </div>`;
+                            }
+                            let userN;
+                            if(itineraries[i].userN == 1) userN = "PERSONA"; else userN = "PERSONE";
+                            html += `
+                            <div style="color: orange; font-size: 100%;">
+                                <div align="left" class="fa fa-thumbs-up" aria-hidden="true"></div>
+                                &ensp;ITINERARIO PROPOSTO DA ${itineraries[i].userN} ${userN}&ensp;
+                                <div align="left" class="fa fa-thumbs-up" aria-hidden="true"></div>
+                            </div>
+                            </div>`;
+                        }
+                        $("#table").html(html);
+                        
+                        $(".isFavourite").click(function() {
+                            let meta_id = $(this).next("p").text().substring(1).split("&").map(x=>x.split("=")[1]).reduce((a,b)=>a+"_"+b);
+                            $.ajax({
+                                type: "GET",
+                                url: "https://localhost:3000/preferito_rimuovi"+$(this).next("p").text()+`&user=${user._id}&meta_id=${meta_id}`,
+                                success: function(d) {
+                                    ws.send("aggiorna");
+                                    caricaDatiItinerari();
+                                },
+                                error: function() {
+                                    alert("Errore");
+                                }
+                            });
+                        });
+
+                        $(".notFavourite").click(function() {
+                            let meta_id = $(this).next("p").text().substring(1).split("&").map(x=>x.split("=")[1]).reduce((a,b)=>a+"_"+b);
+                            $.ajax({
+                                type: "GET",
+                                url: "https://localhost:3000/preferito_aggiungi"+$(this).next("p").text()+`&user=${user._id}&meta_id=${meta_id}`,
+                                success: function(d) {
+                                    ws.send("aggiorna");
+                                    caricaDatiItinerari();                                   
+                                },
+                                error: function() {
+                                    alert("Errore");
+                                }
+                            });
+                        });
+                    },
+                    error: function() {
+                        alert("Errore");
                     }
                 });
             }
-            ws.onmessage=function(event){
-                aux();
-            }
-            $("#test").click(function(){
-                aux();
-            })
         </script>    
     </body>
 </html>

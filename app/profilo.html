@@ -70,6 +70,7 @@
 
         <script>
 
+            var ws = new WebSocket("wss://localhost:3000/");
             var GADB;
             var user;
 
@@ -147,6 +148,7 @@
                                 type: "GET",
                                 url: "https://localhost:3000/preferito_rimuovi"+$(this).next("p").text()+`&user=${user._id}&meta_id=${meta_id}`,
                                 success: function(d) {
+                                    ws.send("aggiorna");
                                     caricaDatiUtente();
                                 },
                                 error: function() {
