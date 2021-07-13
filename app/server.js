@@ -173,30 +173,54 @@ app.get('/meta_dettagli', function(req,res) {
 });
 
 app.get('/meta_dettagli_data', function(req,res) {
+	console.log(req.query);
 	cercaItinerari(req.query.origin,req.query.destination,req.query.departureDate).then(function(response){
-		if(response.data.length == 0)
+		console.log(response.data);
+		if(response.data.length == 0) {
+			console.log("Nessun itinerario trovato");
 			res.send("Nessun itinerario trovato");
+		}
 		else {
 			let itinerario = response.data.filter(function(v) {
 				return v.itineraries[0].duration == req.query.durata &&
 				v.lastTicketingDate == req.query.disponib &&
 				v.price.grandTotal == req.query.prezzo;
 			})[0];
+			console.log("sending");
+			console.log(itinerario);
 			res.send(JSON.stringify(itinerario));
 		}
 	}).catch(function(responseError){
 		console.log(responseError.code);
-		res.send("Errore nel server");
+		console.log("Errore nel server");
+		res.send("Nessun itinerario trovato");
 	});
 });
 
 app.get('/covid', function(req,res) {
-	request.get({url:"http://api.coronatracker.com/v3/stats/worldometer/country"}, function(err1, res1, body1) {
-		if(err1) {
+	request.get({url:"http://api.coronatracker.com/v3/stats/worldometer/country"}, function(err0, res1, body0) {
+		if(err0) {
 			res.send("Errore di richiesta dati");
 		}
 		else {
-			res.send(JSON.parse(body1).filter(x=>req.query.countries.includes(x.countryName.toUpperCase())));
+			request.get({url:"http://api.coronatracker.com/v1/travel-alert"}, function(err1, res1, body1) {
+				if(err1)
+					res.send("Errore di richiesta dati");
+				else {
+					res.send(JSON.parse(body0).filter(x=>req.query.countries.includes(x.countryName.toUpperCase())).map(function(x) {
+						let obj = {
+							"countryCode": x.countryCode,
+							"country": x.country,
+							"countryName": x.countryName,
+							"activeCases": x.activeCases,
+							"lastUpdated": x.lastUpdated,
+							"alertMessage": JSON.parse(body1).find(y=>y.countryCode==x.countryCode).alertMessage
+						}
+						console.log(JSON.parse(body1).find(y=>y.countryCode==x.countryCode));
+						return obj;
+					}));
+				}
+			});
 		}
 	});
 });
@@ -244,6 +268,7 @@ app.get('/airline_data', function(req,res) {
 	//TESTING MODE:
 	var data = JSON.parse(fs.readFileSync('test_airline_data.json'));
 	res.send(data);
+
 });
 
 app.get('/preferito_aggiungi', function(req,res) {
@@ -510,29 +535,24 @@ app.get("/api",function(req,res){
 });
 
 app.get("/api/tuttiItinerari",function(req,res){
-	readCRUD(itinerariesdb, {"id": "_all_docs"}).then(function(res_readi) {
+	readCRUD(itinerariesdb, {"id": "_all_docs?include_docs=true"}).then(function(res_readi) {
 		let tosend = {"itineraries": []};
 		for(let i = 0; i < res_readi.total_rows; i++) {
-			readCRUD(itinerariesdb, {"id": res_readi.rows[i].id}).then(function(res_readi1) {
-				tosend.itineraries.push(
-					{
-						"id": res_readi1._id,
-						"origin": res_readi1.origin,
-						"destination": res_readi1.destination,
-						"departureDate": res_readi1.departureDate,
-						"price": res_readi1.price,
-						"currency": res_readi1.currency,
-						"duration": res_readi1.duration,
-						"lastTicketingDate": res_readi1.lastTicketingDate,
-						"userN": res_readi1.userN
-					}
-				);
-				if(tosend.itineraries.length == res_readi.total_rows)
-					res.send(tosend);
-			}).catch(function(err_readi1) {
-				console.log(err_readi1);
-			});
+			tosend.itineraries.push(
+				{
+					"id": res_readi.rows[i].doc._id,
+					"origin": res_readi.rows[i].doc.origin,
+					"destination": res_readi.rows[i].doc.destination,
+					"departureDate": res_readi.rows[i].doc.departureDate,
+					"price": res_readi.rows[i].doc.price,
+					"currency": res_readi.rows[i].doc.currency,
+					"duration": res_readi.rows[i].doc.duration,
+					"lastTicketingDate": res_readi.rows[i].doc.lastTicketingDate,
+					"userN": res_readi.rows[i].doc.userN
+				}
+			);
 		}
+		res.send(tosend);
 	}).catch(function(err_readi) {
 		console.log(err_readi);
 		res.send(tosend);

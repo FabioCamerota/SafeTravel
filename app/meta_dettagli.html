@@ -61,11 +61,19 @@
             .isFavourite, .notFavourite {
                 font-size: 150%;
             }
+            .covid, .tappa {
+                border-radius: 1vw;
+            }
+            .row {
+                display: flex; 
+                align-items: center; 
+                justify-content: center;
+            }
         </style>
     </header>
     <body onload="caricaItinerario()">
-        <div id="itinerario"></div>
         <div class="content-save" align="center"></div>
+        <div id="itinerario"></div>
         <div id="loading"><div class="loader"></div></div>
 
 
@@ -73,7 +81,7 @@
             var ws = new WebSocket("wss://localhost:3000/");
             var user;
             var GADB;
-            var elements2load = 4;
+            var elements2load = 3;
 
             $.ajax({
                 type: "GET",
@@ -108,11 +116,33 @@
                 }
             });
 
+            function convertTime(time) {
+                return time.replace("PT","").replace("H"," ORE E ").replace("M", " MINUTI")
+            }
+
+            function convertDate(date) {
+                if(date.includes("."))
+                    return date.split(".")[0].replace("T", " ALLE ");
+                else
+                    return date.replace("T", " ALLE ");
+            }
+
             function caricaItinerario() {
                 $.ajax({
                     type: "GET",
                     url: "https://localhost:3000/meta_dettagli_data"+window.location.search,
                     success: function (d) {
+                        if(d == "" || d == "Nessun itinerario trovato") {
+                            $("#itinerario").html(`
+                                <div class="text-center">
+                                    <h2><b>
+                                        QUESTO ITINERARIO NON ESISTE!
+                                    </b></h2>
+                                </div>
+                            `);
+                            $("#loading").html("");
+                            return;
+                        } 
                         data = JSON.parse(d);
                         let origin = data.itineraries[0].segments[0].departure.iataCode;
                         let destination = data.itineraries[0].segments[data.itineraries[0].segments.length-1].arrival.iataCode;
@@ -142,16 +172,16 @@
                                     ${destination}
                                     <div class="fa fa-plane"></div>
                                 </b></h2>
-                                <h3>PREZZO: ${new Intl.NumberFormat('it-IT', { style: 'currency', currency: data.price.currency }).format(data.price.grandTotal)}</h3>
+                                <h3>PREZZO: <b>${new Intl.NumberFormat('it-IT', { style: 'currency', currency: data.price.currency }).format(data.price.grandTotal)}</b></h3>
                                 <h3>PRENOTAZIONI DISPONIBILI FINO AL <b>${data.lastTicketingDate}</b></h3>
-                                <h3>DURATA DELL'ITINERARIO: <b>${data.itineraries[0].duration}</b></h3>
+                                <h3>DURATA DELL'ITINERARIO: <b>${convertTime(data.itineraries[0].duration)}</b></h3>
                             </div>
 
 
                             <div class="content-photos" align="center"></div>
                             <div class="content-airline" align="center"></div>
-                            <p>${JSON.stringify(data)}</p>
                         `);
+                        //<p>${JSON.stringify(data)}</p>
 
                         if(--elements2load <= 0) $("#loading").html("");
 
@@ -195,17 +225,42 @@
                                     let data2append = JSON.stringify(itineraryData[j]);
 
                                     if(typeof(data2append) != "undefined") {
+                                        let departure = GADB.find(x=>x.IATA == itineraryData[j].info.departure.iataCode).city;
+                                        let arrival = GADB.find(x=>x.IATA == itineraryData[j].info.arrival.iataCode).city;
                                         data2append = `
-                                            <p>${JSON.stringify(itineraryData[j].info)}</p>
-                                            <p>${JSON.stringify(itineraryData[j].fares)}</p>
-                                        
+                                        <div class="list-group-item text-center">
+                                            <h4 class="list-group-item-heading" style="font-weight: bold;">
+                                                <div class="fa fa-ticket"></div>
+                                                RIGUARDO QUESTO SCALO
+                                                <div class="fa fa-ticket"></div>
+                                            </h4>
+                                            <div class="list-group-item-text">
+                                                <p>PARTENZA DA ${departure} IL <b>${convertDate(itineraryData[j].info.departure.at)}</b></br>
+                                                ARRIVO A ${arrival} IL <b>${convertDate(itineraryData[j].info.arrival.at)}</b></br>
+                                                DURATA DEL VOLO: <b>${convertTime(itineraryData[j].info.duration)}</b><br/>
+                                                ${itineraryData[j].fares.cabin} CLASS<br/>
+                                                AMMESSI BAGAGLI FINO A ${itineraryData[j].fares.includedCheckedBags.weight} ${itineraryData[j].fares.includedCheckedBags.weightUnit}</p>
+                                            </div>
+                                        </div>
                                         `;//JSON.stringify(itineraryData[j])
+                                    }
+                                    else {
+                                        data2append = `
+                                        <div class="list-group-item text-center">
+                                            <h4 class="list-group-item-heading" style="font-weight: bold;">
+                                                <div class="fa fa-ticket"></div>
+                                                HAI RAGGIUNTO LA DESTINAZIONE!
+                                                <div class="fa fa-ticket"></div>
+                                            </h4>
+                                            <p>GODITI LA TUA VACANZA!</p>
+                                        </div>
+                                        `;
                                     }
                                     
                                     $("#itinerario .content-photos").append(`
                                         <div class="container-fluid" style="vertical-align: middle;">
                                             <div class="row ${ris[j].country}">
-                                                <div class="col-md-4">
+                                                <div class="col-md-4 tappa">
                                                     ${data2append}
                                                 </div>
                                                 <div class="col-md-4">
@@ -215,12 +270,13 @@
                                                     <div class="fa fa-angle-double-down"></div>
                                                     <br/>
                                                 </div>
+                                                <div class="col-md-4 covid"><div class="loader"></div></div>
                                             </div>
                                         </div>
                                     `);
                                 }
-                                covidData(allcities.map(x=>x.split(" ")[1].replace("(","").replace(")","")));
                                 if(--elements2load <= 0) $("#loading").html("");
+                                covidData(allcities.map(x=>x.split(" ")[1].replace("(","").replace(")","")));
                             }
                         },
                         error: function() {
@@ -245,11 +301,13 @@
                             url: `https://localhost:3000/photo?place=${company} company logo render`,
                             success: function(data) {
                                 $("#itinerario .content-airline").append(`
-                                    <p>ITINERARIO GESTITO DA ${company}</p>
+                                    <p><b>ITINERARIO GESTITO DA ${company}<b/></p>
                                     <a href="${url}" target="_blank">
                                         <img width="150px" src=${data}>
                                         <br/>
-                                        PRENOTA SUBITO!
+                                        <h4 class="btn btn-primary">PRENOTA SUBITO!</h4>
+                                        <br/>
+                                        <br/>
                                     </a>
 
                                 `);
@@ -345,22 +403,27 @@
                     contentType: 'application/json',
                     data: {"countries": allcountries},
                     success: function(data) {
-                        $("#itinerario").append(JSON.stringify(data));
+//                        $("#itinerario").append(JSON.stringify(data));
                         for(let i = 0; i < data.length; i++) {
-
-                            let data2append = `
-                                <p>CASI ATTIVI: ${data[i].activeCases}</p>
-                                <p>DATO AGGIORNATO IL: ${data[i].lastUpdated}</p>
                             
-                            `;//JSON.stringify(data[i])
-
-                            $(`.${data[i].country.toUpperCase()}`).append(`
-                                <div class="col-md-4">
-                                    ${data2append}
+                            let data2append = `
+                            <div class="list-group-item covid text-center">
+                                <h4 class="list-group-item-heading" style="font-weight: bold;">
+                                    <div class="fa fa-exclamation"></div>
+                                    CASI COVID ATTIVI: ${data[i].activeCases}
+                                    <div class="fa fa-exclamation"></div>
+                                </h4>
+                                <div class="list-group-item-text">
+                                    <p>DATO AGGIORNATO IL <b>${convertDate(data[i].lastUpdated)}</b>
+                                    <b>AVVERTENZE:</b><br/> <div style="text-align: left;">${data[i].alertMessage.replaceAll("|","<br/>")}</div></p>
                                 </div>
+                            </div>`;
+
+                            $(`.${data[i].country.toUpperCase()} .covid`).html(`
+                                ${data2append}
                             `);
                         }
-                        if(--elements2load <= 0) $("#loading").html("");
+                        //if(--elements2load <= 0) $("#loading").html("");
                     },
                     error: function() {
                         alert("Errore");

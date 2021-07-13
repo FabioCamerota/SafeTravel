@@ -62,7 +62,7 @@ GET http://api.coronatracker.com/v5/analytics/newcases/country?countryCode=AU&st
 GET https://www.google.com/search?q=kirby&tbm=isch&ie=utf-8&oe=utf-8&sclient=gws-wiz
 
 ###
-GET http://admin:admin@127.0.0.1:5984/itineraries/_all_docs
+GET http://admin:admin@127.0.0.1:5984/itineraries/_all_docs?include_docs=true
 
 ###
 GET http://admin:admin@127.0.0.1:5984/itineraries/BKK_AAR_2021-08-01_479.11_EUR_PT18H35M_2021-08-01
@@ -74,7 +74,7 @@ GET https://127.0.0.1:3000/api/tuttiItinerari
 GET http://api.coronatracker.com/v3/stats/worldometer/country?countryName=Jersey
 
 ###
-GET http://api.coronatracker.com/v1/travel-alert?countryCode=FK
+GET http://api.coronatracker.com/v1/travel-alert?countryCode=FR
 
 ###
-GET https://127.0.0.1:3000/covid?countries[0]=FRANCE&countries[1]=USA&countries[2]=ITALY
+GET https://127.0.0.1:3000/covid?countries[0]=THAILAND&countries[1]=QATAR
