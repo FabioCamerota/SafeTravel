@@ -123,14 +123,14 @@ app.get('/profilo_dati', function(req, res) {
 	//console.log(req.session);
 	//console.log(req.session.user);
 	readCRUD(userdb,{"id":req.session.user._id}).then(function(res_readu) {
-		//console.log("--------------------------------");
+		//console.log("READU--------------------------------");
 		//console.log(res_readu);
 		req.session.user = res_readu;
-		//console.log("A--------------------------------");
+		//console.log("ASESSIONUSER--------------------------------");
 		//console.log(req.session.user);
-		//console.log("--------------------------------");
+		//console.log("SENT DATA, DONE!--------------------------------");
 		res.send(req.session.user);
-	});
+	}).catch((err)=>console.log(err));
 });
 
 app.get('/mete', function(req,res) {
@@ -219,6 +219,26 @@ app.get('/airline_data', function(req,res) {
 });
 
 app.get('/preferito_aggiungi', function(req,res) {
+
+	function aux() {
+		readCRUD(userdb,{"id": req.query.user}).then(function(res_readu) { //...LEGGO POI I DATI DELL'UTENTE...
+			let new_itineraries = res_readu.mete;
+			new_itineraries.push(req.query.meta_id);
+			let user = {
+				"id": res_readu._id,
+				"token": res_readu.token,
+				"nome": res_readu.nome,
+				"mete": new_itineraries
+			}
+			updateCRUD(userdb,user).then(function(res_updateu) { //...E AGGIORNO IL SUO ARRAY INSERENDO L'ITINERARIO.
+				console.log(req.session.user);
+				req.session.user.mete = new_itineraries;
+				console.log(req.session.user);
+				res.send("useless data");
+			}).catch(function(err_updateu) { console.log(err_updateu); res.send("useless data"); });
+		}).catch(function(err_readu) { console.log(err_readu); res.send("useless data"); });
+	}
+
 	readCRUD(itinerariesdb, {"id": req.query.meta_id}).then(function(res_readi) { //L'ITINERARIO ESISTE IN DB...
 		let obj = {
 			"id": res_readi._id,
@@ -226,25 +246,14 @@ app.get('/preferito_aggiungi', function(req,res) {
 			"destination": res_readi.destination,
 			"departureDate": res_readi.departureDate,
 			"price": res_readi.price,
+			"currency": res_readi.currency,
 			"duration": res_readi.duration,
 			"lastTicketingDate": res_readi.lastTicketingDate,
 			"userN": res_readi.userN+1
 		};
 		updateCRUD(itinerariesdb, obj).then(function(res_updatei) { //...QUINDI AGGIORNO QUELL'ITINERARIO IN DB (userN+1)...
-			readCRUD(userdb,{"id": req.query.user}).then(function(res_readu) { //...LEGGO POI I DATI DELL'UTENTE...
-				let new_itineraries = res_readu.mete;
-				new_itineraries.push(req.query.meta_id);
-				let user = {
-					"id": res_readu._id,
-					"token": res_readu.token,
-					"nome": res_readu.nome,
-					"mete": new_itineraries
-				}
-				updateCRUD(userdb,user).then(function(res_updateu) { //...E AGGIORNO IL SUO ARRAY INSERENDO L'ITINERARIO.
-					req.session.user.mete = new_itineraries;
-				}).catch((err_updateu)=>console.log(err_updateu+246));
-			}).catch((err_readu)=>console.log(err_readu+247));
-		}).catch((err_updatei)=>console.log(err_updatei+248));
+			aux();
+		}).catch(function(err_updatei) { console.log(err_updatei); res.send("useless data"); });
 	}).catch(function(err_readi) { //SE INVECE L'ITINERARIO NON ESISTE IN DB...
 		let obj = {
 			"id": req.query.meta_id,
@@ -252,31 +261,21 @@ app.get('/preferito_aggiungi', function(req,res) {
 			"destination": req.query.destination,
 			"departureDate": req.query.departureDate,
 			"price": req.query.prezzo,
+			"currency": req.query.currency,
 			"duration": req.query.durata,
 			"lastTicketingDate": req.query.disponib,
 			"userN": 1
 		};
 		createCRUD(itinerariesdb,obj).then(function(res_createi) { //...LO CREO E LO INSERISCO IN DB...
-			readCRUD(userdb,{"id": req.query.user}).then(function(res_readu) { //...LEGGO POI I DATI DELL'UTENTE...
-				let new_itineraries = res_readu.mete;
-				new_itineraries.push(req.query.meta_id);
-				let user = {
-					"id": res_readu._id,
-					"token": res_readu.token,
-					"nome": res_readu.nome,
-					"mete": new_itineraries
-				}
-				updateCRUD(userdb,user).then(function(res_updateu) { //...E AGGIORNO IL SUO ARRAY INSERENDO L'ITINERARIO.
-					req.session.user.mete = new_itineraries;
-				}).catch((err_updateu)=>console.log(err_updateu+268));
-			}).catch((err_readu)=>console.log(err_readu+269));
-		}).catch((err_createi)=>console.log(err_createi+270));
+			aux();
+		}).catch(function(err_createi) { console.log(err_createi); res.send("useless data"); });
+		console.log(err_readi)
 	});
 });
 
 /*-------------------------------------------*/
 app.get('/preferito_rimuovi', function(req,res) {
-	function aux(){
+	function aux() {
 		readCRUD(userdb,{"id": req.query.user}).then(function(res_readu) { //...LEGGO POI I DATI DELL'UTENTE...
 			let new_itineraries = res_readu.mete;
 
@@ -292,8 +291,10 @@ app.get('/preferito_rimuovi', function(req,res) {
 
 			updateCRUD(userdb,user).then(function(res_updateu) { //...E AGGIORNO IL SUO ARRAY TOGLIENDO L'ITINERARIO.
 				req.session.user.mete = new_itineraries;
-			}).catch((err_updateu)=>console.log(err_updateu+246));
-		}).catch((err_readu)=>console.log(err_readu+247));
+				console.log(req.session.user);
+				res.send("useless data");
+			}).catch(function(err_updateu) { console.log(err_updateu); res.send("useless data"); });
+		}).catch(function(err_readu) { console.log(err_readu); res.send("useless data"); });
 	};
 
 	readCRUD(itinerariesdb, {"id": req.query.meta_id}).then(function(res_readi) { //L'ITINERARIO ESISTE IN DB...
@@ -303,29 +304,26 @@ app.get('/preferito_rimuovi', function(req,res) {
 			"destination": res_readi.destination,
 			"departureDate": res_readi.departureDate,
 			"price": res_readi.price,
+			"currency": res_readi.currency,
 			"duration": res_readi.duration,
 			"lastTicketingDate": res_readi.lastTicketingDate,
 			"userN": res_readi.userN-1											//decremento
 		};
 
 		if(obj["userN"] <1 ) {													//nessun utente l'ha salvato									
-			deleteCRUD(itinerariesdb,obj).then(function(res_del){				//elimino da itineraries
+			deleteCRUD(itinerariesdb,obj).then(function(res_deli){				//elimino da itineraries
 				console.log("Meta eliminata dalle preferite con successo!");
-			}).catch((err_del)=>console.log(err_del + "Errore in fase di eliminazione"));
-
+			}).catch(function(err_deli) { console.log(err_deli+": Errore DELETE ITINERARIES"); res.send("useless data"); });
 			aux();																
 		}
 		else{
-
-		updateCRUD(itinerariesdb, obj).then(function(res_updatei) { //... AGGIORNO QUELL'ITINERARIO IN DB (almeno 1 utente lo ha salvato) ...
-			
-			aux();													
-
-		}).catch((err_updatei)=>console.log(err_updatei+248));
-	}
-		}).catch(function(err_readi) { //SE INVECE L'ITINERARIO NON ESISTE IN DB...(errore : in teoria ciò non può accadere)
-			res.send(err_readi);
-		});
+			updateCRUD(itinerariesdb, obj).then(function(res_updatei) { //... AGGIORNO QUELL'ITINERARIO IN DB (almeno 1 utente lo ha salvato) ...
+				aux();													
+			}).catch(function(err_updatei) { console.log(err_updatei+": Errore UPDATE ITINERARIES"); res.send("useless data"); });
+		}
+	}).catch(function(err_readi) { //SE INVECE L'ITINERARIO NON ESISTE IN DB...(errore : in teoria ciò non può accadere)
+		console.log(err_readi+": Errore READ ITINERARIES"); res.send("useless data");
+	});
 });
 /*-------------------------------------------*/
 

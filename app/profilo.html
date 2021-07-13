@@ -50,13 +50,13 @@
                 0% { transform: rotate(0deg); }
                 100% { transform: rotate(360deg); }
             }
-            .modal-photo {
-                width: 300px;
-                height: 300px;
-                display: inline-block; /* or you could float them */
-                overflow: hidden;
-                background-size: cover;
-                border-radius: 50%;
+            .isFavourite {
+                color: orange;
+                cursor: pointer;
+            }
+            .isFavourite:hover {
+                color: black;
+                cursor: pointer;
             }
             .fa-angle-double-down {
                 font-size: 50px !important;
@@ -64,17 +64,19 @@
         </style>
     </header>
     <body onload="caricaDatiUtente()">
-        <h2>BENTORNATO</h2>
+        <h2 class="text-center"></h2>
 
         <div id="table"></div>
 
         <script>
 
             var GADB;
+            var user;
 
             $.ajax({
                 type: "GET",
                 url: "https://localhost:3000/GADB",
+                async: false,
                 success: function (data) {
                     GADB = data;
                     arr = data.filter(v=>v.IATA!=`N/A`)
@@ -93,44 +95,65 @@
             });
 
             function caricaDatiUtente() {
+
                 $.ajax({
                     type: "GET",
                     url: "https://localhost:3000/profilo_dati",
                     success: function(data) {
-                        $("h2").append(" "+data.nome.toUpperCase());
+                        user = data;
+                        $("h2").html("BENTORNATO "+user.nome.toUpperCase()+"!");
                         let html = "";
-                        for(let i = 0; i < data.mete.length; i++) {
-                            let dettagliMeta = data.mete[i].split("_");
+                        for(let i = 0; i < user.mete.length; i++) {
+
+                            //origin=BKK&destination=AAR&departureDate=2021-08-01&prezzo=479.11&currency=EUR&durata=PT18H35M&disponib=2021-08-01
+                            let dettagliMeta = user.mete[i].split("_");            
+                            let hiddenURL = `?origin=${dettagliMeta[0]}&destination=${dettagliMeta[1]}&departureDate=${dettagliMeta[2]}&prezzo=${dettagliMeta[3]}&amp;currency=${dettagliMeta[4]}&durata=${dettagliMeta[5]}&disponib=${dettagliMeta[6]}`;
+                            //{"IATA":"GKA","airport":"GOROKA","city":"GOROKA","country":"PAPUA NEW GUINEA"}
+
+                            let origin = GADB.filter(v=>v.IATA==dettagliMeta[0])[0];
+                            origin = origin.city+" ("+origin.country+")";
+
+                            let destination = GADB.filter(v=>v.IATA==dettagliMeta[1])[0];
+                            destination = destination.city+" ("+destination.country+")";
 
                             html += `<div class="list-group-item itinerario">`;
-                            html += `<h4 class="list-group-item-heading" style="font-weight: bold;">${dettagliMeta[0]}-${dettagliMeta[1]}`;
-                            html += `<b style="float: right;">${new Intl.NumberFormat('it-IT', { style: 'currency', currency: "EUR" }).format(dettagliMeta[3])}</b></h4>`;
+                            html += `<h4 class="list-group-item-heading" style="font-weight: bold;">
+                                <div class="fa fa-plane"></div>
+                                ${origin}
+                                <div class="fa fa-angle-double-right"></div>
+                                <div class="fa fa-angle-double-right"></div>
+                                <div class="fa fa-angle-double-right"></div> 
+                                ${destination}
+                                <div class="fa fa-plane"></div>`;
+                            html += `<b style="float: right;">${new Intl.NumberFormat('it-IT', { style: 'currency', currency: dettagliMeta[4] }).format(dettagliMeta[3])}</b></h4>`;
                             html += `<div class="list-group-item-text">
-                                PRENOTAZIONI DISPONIBILI FINO AL <b>${dettagliMeta[5]}</b><br/>
-                                DURATA DELL'ITINERARIO: <b>${dettagliMeta[4]}</b>
-                                <a class="details" href="https://localhost:3000/meta_dettagli?origin=${dettagliMeta[0]}&destination=${dettagliMeta[1]}&departureDate=${dettagliMeta[2]}&prezzo=${dettagliMeta[3]}&durata=${dettagliMeta[4]}&disponib=${dettagliMeta[5]}" target="_blank">VEDI I DETTAGLI</a>
+                                PRENOTAZIONI DISPONIBILI FINO AL <b>${dettagliMeta[6]}</b><br/>
+                                DURATA DELL'ITINERARIO: <b>${dettagliMeta[5]}</b>
+                                <a class="details" href="https://localhost:3000/meta_dettagli${hiddenURL}" target="_blank">VEDI I DETTAGLI</a>
+                                <br/>
+                                <div class="isFavourite" align="right">
+                                    TOGLI DAI PREFERITI
+                                    <span class="fa fa-star checked"></span>
+                                </div>
+                                <p hidden>${hiddenURL}</p>
                              </div>`;
                             html += `</div>`;
                         }
-                        $("#table").append(html);
-                    },
-                    error: function() {
-                        alert("Errore");
-                    }
-                });
-            }
-
-            function cercaItinerario(datiMeta) {
-                //origin=BKK&destination=AAR&departureDate=2021-08-01&prezzo=661.80&durata=PT18H45M&disponib=2021-06-30
-                let query = `?origin=${datiMeta[0]}&destination=${datiMeta[1]}&departureDate=${datiMeta[2]}&prezzo=${datiMeta[3]}&durata=${datiMeta[4]}&disponib=${datiMeta[5]}`;
-                $.ajax({
-                    type: "GET",
-                    url: "https://localhost:3000/profilo_dati",
-                    success: function(data) {
-                        $("h2").append(" "+data.nome.toUpperCase());
-                        for(let i = 0; i < data.mete.length; i++) {
-                            cercaItinerario(data.mete[i].split("_"));
-                        }
+                        $("#table").html(html);
+                        
+                        $(".isFavourite").click(function() {
+                            let meta_id = $(this).next("p").text().substring(1).split("&").map(x=>x.split("=")[1]).reduce((a,b)=>a+"_"+b);
+                            $.ajax({
+                                type: "GET",
+                                url: "https://localhost:3000/preferito_rimuovi"+$(this).next("p").text()+`&user=${user._id}&meta_id=${meta_id}`,
+                                success: function(d) {
+                                    caricaDatiUtente();
+                                },
+                                error: function() {
+                                    alert("Errore");
+                                }
+                            });
+                        });
                     },
                     error: function() {
                         alert("Errore");

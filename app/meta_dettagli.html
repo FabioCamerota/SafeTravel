@@ -46,12 +46,20 @@
             .fa-angle-double-down {
                 font-size: 50px !important;
             }
-            .fa-star {
-                font-size: 200% !important;
-                color: black;
+            .isFavourite {
+                color: orange;
+                cursor: pointer;
             }
-            .checked {
-                color: blue;
+            .isFavourite:hover {
+                color: black;
+                cursor: pointer;
+            }
+            .notFavourite:hover {
+                color: orange;
+                cursor: pointer;
+            }
+            .isFavourite, .notFavourite {
+                font-size: 150%;
             }
         </style>
     </header>
@@ -61,13 +69,14 @@
 
         <script>
             var ws = new WebSocket("wss://localhost:3000/");
-            var user; caricaDatiUtente();
+            var user;
             var GADB;
             var elements2load = 3;
 
             $.ajax({
                 type: "GET",
                 url: "https://localhost:3000/GADB",
+                async: false,
                 success: function (data) {
                     GADB = data;
                     arr = data.filter(v=>v.IATA!=`N/A`)
@@ -85,18 +94,17 @@
                 }
             });
 
-            function caricaDatiUtente() {
-                $.ajax({
-                    type: "GET",
-                    url: "https://localhost:3000/profilo_dati",
-                    success: function(data) {
-                        user = data;
-                    },
-                    error: function() {
-                        user = {};
-                    }
-                });
-            }
+            $.ajax({
+                type: "GET",
+                url: "https://localhost:3000/profilo_dati",
+                async: false,
+                success: function(data) {
+                    user = data;
+                },
+                error: function() {
+                    user = "";
+                }
+            });
 
             function caricaItinerario() {
                 $.ajax({
@@ -140,9 +148,7 @@
 
                             <div class="content-photos" align="center"></div>
                             <div class="content-airline" align="center"></div>
-                            <div class="content-saved" align="right"></div>
-                            <div class="content-removed" align="right"></div>
-
+                            <div class="content-save" align="center"></div>
                             <p>${JSON.stringify(data)}</p>
                         `);
 
@@ -151,7 +157,7 @@
                         photosSearch(allcities);
                         airlineSearch(data.validatingAirlineCodes[0]);
 
-                        //origin=BKK&destination=AAR&departureDate=2021-08-01&prezzo=479.11&durata=PT18H35M&disponib=2021-08-01
+                        //origin=BKK&destination=AAR&departureDate=2021-08-01&prezzo=479.11&currency=EUR&durata=PT18H35M&disponib=2021-08-01
                         let meta_id = window.location.search.substring(1).split("&").map(x=>x.split("=")[1]).reduce((a,b)=>a+"_"+b);
                         isSaved(meta_id);
                     },
@@ -233,65 +239,74 @@
                 if(user == "") return;                
                 let mete = user.mete;
                 if(mete.includes(meta_id)) {
-                    $("#itinerario .content-saved").html(`
-                        <span class="fa fa-star checked"></span>
-                        AGGIUNGI AI PREFERITI
-                        <span class="fa fa-star checked"></span>
-                    `)
-                    $("#itinerario .content-removed").html(`
-                        <span class="fa fa-star checked"></span>
-                        RIMUOVI DAI PREFERITI
-                        <span class="fa fa-star checked"></span>
+                    $("#itinerario .content-save").html(`
+                        <div class="isFavourite" align="right">
+                            <span class="fa fa-star checked"></span>
+                            TOGLI DAI PREFERITI
+                            <span class="fa fa-star checked"></span>
+                        </div>
                     `);
                 }
                 else {
-                    $("#itinerario .content-saved").html(`
-                        <span class="fa fa-star"></span>
-                        AGGIUNGI AI PREFERITI ORA
-                        <span class="fa fa-star"></span>
-                    `)
-                    $("#itinerario .content-removed").html(`
-                        <span class="fa fa-star "></span>
-                        RIMUOVI DAI PREFERITI
-                        <span class="fa fa-star "></span>
+                    $("#itinerario .content-save").html(`
+                        <div class="notFavourite" align="right">
+                            <span class="fa fa-star checked"></span>
+                            AGGIUNGI AI PREFERITI
+                            <span class="fa fa-star checked"></span>
+                        </div>
                     `);
                 }
-                $("#itinerario .content-saved").click(function() {
-                    $.ajax({
-                        type: "GET",
-                        url: "https://localhost:3000/preferito_aggiungi"+window.location.search+`&user=${user._id}&meta_id=${meta_id}`,
-                        success: function(data) {
-                            
-                            ws.send("aggiorna");
-                            console.log("ho agg");
-                            $("#itinerario .content-saved").html(`
-                                <span class="fa fa-star checked"></span>
-                                AGGIUNGI AI PREFERITI
-                                <span class="fa fa-star checked"></span>
-                            `);
-                            caricaDatiUtente();
-                        },
-                        error: function() {
-                            user = {};
-                        }
-                    });
-                });
-
-                $("#itinerario .content-removed").click(function() {
+                
+                $(".isFavourite").click(function() {
                     $.ajax({
                         type: "GET",
                         url: "https://localhost:3000/preferito_rimuovi"+window.location.search+`&user=${user._id}&meta_id=${meta_id}`,
-                        success: function() {
+                        success: function(d) {
                             ws.send("aggiorna");
-                            console.log("ho agg");
-                           console.log("rimosso con successo dalle mete dell'utente")
+                            alert("ho agg");
+                            $.ajax({
+                                type: "GET",
+                                url: "https://localhost:3000/profilo_dati",
+                                success: function(data) {
+                                    user = data;
+                                    isSaved(meta_id);
+                                },
+                                error: function() {
+                                    alert("Errore");
+                                }
+                            });
                         },
                         error: function() {
-                            user = {};
+                            alert("Errore");
                         }
                     });
                 });
 
+                $(".notFavourite").click(function() {
+                    $.ajax({
+                        type: "GET",
+                        url: "https://localhost:3000/preferito_aggiungi"+window.location.search+`&user=${user._id}&meta_id=${meta_id}`,
+                        success: function(d) {
+                            ws.send("aggiorna");
+                            alert("ho agg");
+                            $.ajax({
+                                type: "GET",
+                                url: "https://localhost:3000/profilo_dati",
+                                success: function(data) {
+                                    user = data;
+                                    isSaved(meta_id);
+                                },
+                                error: function() {
+                                    alert("Errore");
+                                }
+                            });
+                        },
+                        error: function() {
+                            alert("Errore");
+                        }
+                    });
+                });
+                
             }
 
 
