@@ -575,3 +575,5 @@ app.get("/api/metaPiuScelta",function(req,res){
 		Entrambi
 	Itinerari ordinati con meno casi attivi
 */
+
+//https://www.facebook.com/dialog/share?app_id=310503350806055&display=popup&href=https://127.0.0.1:3000/meta_dettagli?origin=BKK%26destination=AAR%26departureDate=2021-08-01%26prezzo=1034.80%26currency=EUR%26durata=PT42H%26disponib=2021-06-28&quote=Guarda che bel viaggio mi farò!
