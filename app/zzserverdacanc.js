@@ -246,7 +246,7 @@ app.get('/photo', function(req,res) {
 
 app.get('/airline_data', function(req,res) {
 	var code = req.query.code;
-	/*
+	
 	amadeus.referenceData.airlines.get({
 		airlineCodes : code
 	}).then(function(response0){
@@ -263,7 +263,8 @@ app.get('/airline_data', function(req,res) {
 	}).catch(function(response0Error){
 		res.send(response0Error);
 	});
-	*/
+
+	return;
 	
 	//TESTING MODE:
 	var data = JSON.parse(fs.readFileSync('test_airline_data.json'));

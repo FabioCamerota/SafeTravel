@@ -117,7 +117,14 @@
             });
 
             function convertTime(time) {
-                return time.replace("PT","").replace("H"," ORE E ").replace("M", " MINUTI")
+                if(time.includes("M"))
+                    return time.replace("PT","").replace("H"," ORE E ").replace("M", " MINUTI");
+                else {
+                    if(time.replace("PT","").replace("H","") == "1")
+                        return time.replace("PT","").replace("H"," ORA");
+                    else
+                        return time.replace("PT","").replace("H"," ORE");
+                }
             }
 
             function convertDate(date) {
@@ -181,7 +188,7 @@
                             <div class="content-photos" align="center"></div>
                             <div class="content-airline" align="center"></div>
                         `);
-                        //<p>${JSON.stringify(data)}</p>
+                        //$("#itinerario").append(`<p>${JSON.stringify(data)}</p>`);
 
                         if(--elements2load <= 0) $("#loading").html("");
 
@@ -237,9 +244,8 @@
                                             <div class="list-group-item-text">
                                                 <p>PARTENZA DA ${departure} IL <b>${convertDate(itineraryData[j].info.departure.at)}</b></br>
                                                 ARRIVO A ${arrival} IL <b>${convertDate(itineraryData[j].info.arrival.at)}</b></br>
-                                                DURATA DEL VOLO: <b>${convertTime(itineraryData[j].info.duration)}</b><br/>
-                                                ${itineraryData[j].fares.cabin} CLASS<br/>
-                                                AMMESSI BAGAGLI FINO A ${itineraryData[j].fares.includedCheckedBags.weight} ${itineraryData[j].fares.includedCheckedBags.weightUnit}</p>
+                                                DURATA DEL VOLO: <b>${convertTime(itineraryData[j].info.duration)}<br/>
+                                                ${itineraryData[j].fares.cabin.replaceAll("_"," ")} CLASS<br/></b></p>
                                             </div>
                                         </div>
                                         `;//JSON.stringify(itineraryData[j])
@@ -273,6 +279,7 @@
                                                 <div class="col-md-4 covid"><div class="loader"></div></div>
                                             </div>
                                         </div>
+                                        <hr/>
                                     `);
                                 }
                                 if(--elements2load <= 0) $("#loading").html("");
@@ -414,7 +421,7 @@
                                     <div class="fa fa-exclamation"></div>
                                 </h4>
                                 <div class="list-group-item-text">
-                                    <p>DATO AGGIORNATO IL <b>${convertDate(data[i].lastUpdated)}</b>
+                                    <p>DATO AGGIORNATO IL <b>${convertDate(data[i].lastUpdated)}</b><br/><br/>
                                     <b>AVVERTENZE:</b><br/> <div style="text-align: left;">${data[i].alertMessage.replaceAll("|","<br/>")}</div></p>
                                 </div>
                             </div>`;
