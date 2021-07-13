@@ -21,18 +21,24 @@
         <div></div>
 
         <script>
-            
-            $("#test").click(function(){
+            var ws = new WebSocket("wss://localhost:3000/");
+            function aux(){
                 $.ajax({
                 type: "GET",
                 url: "https://localhost:3000/vedi_mete_proposte",
                 success: function(data) {
-                    $("div").append(data);
-                },
-                error: function() {
-                    $("div").append("Errore");
-                }
-            });
+                        $("div").append(data);
+                    },
+                    error: function() {
+                        $("div").append("Errore");
+                    }
+                });
+            }
+            ws.onmessage=function(event){
+                aux();
+            }
+            $("#test").click(function(){
+                aux();
             })
         </script>    
     </body>

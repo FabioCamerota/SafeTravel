@@ -362,24 +362,7 @@ const httpServer = https.createServer(options, app);
 
 //Inizio WEBSOCKET
 const ws = new WebSocket.Server({ server: httpServer });
-ws.on('connection', function(conn) {
-	console.log("connessione open");
-	conn.on('message', function(message) {
-		console.log('ricevuto:  %s', message);
-		readCRUD(itinerariesdb, {"id": "_all_docs"}).then(function(res_readi) {
-			res.send(JSON.stringify(res_readi.total_rows));
-			console.log(res_readi);
-		}).catch(function(err_readi) {
-			res.send(err_readi);
-			console.log(err_readi);
-		});
-	});
 
-	conn.on('close', function() {
-	  console.log("connessione closed2");
-	});
-
-});
 /*
 CLIENTS=[];
 ws.on('connection', function(conn) {
@@ -406,13 +389,36 @@ for (var i=0; i<CLIENTS.length; i++) {
 }
 }
 */
+CLIENTS=[];
+ws.on('connection', function(conn) {
+	CLIENTS.push(conn);
+	console.log("connessione open");
+	conn.on('message', function(message) {
+		console.log('ricevuto:  %s', message);
+		sendAll(message);
+	});
+
+	conn.on('close', function() {
+		console.log("connection closed");
+		CLIENTS.splice(CLIENTS.indexOf(conn), 1);
+	});
+
+});
+
+function sendAll (message) {
+	for (var i=0; i<CLIENTS.length; i++) {
+	 var j=i+1;
+	 CLIENTS[i].send("Messaggio per il client "+j+": "+message);
+	}
+}
+
 app.get('/vedi_mete_proposte', function(req,res) {
 	readCRUD(itinerariesdb, {"id": "_all_docs"}).then(function(res_readi) {
 		res.send(JSON.stringify(res_readi.total_rows));
 	}).catch(function(err_readi) {
 		res.send(err_readi);
 	});
-
+	
 });
 //Fine WEBSOCKET
 
