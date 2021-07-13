@@ -118,7 +118,7 @@ app.get('/GADB', function(req,res) {
 app.get('/profilo', function(req, res) {
 	res.sendFile("profilo.html",{root:__dirname});
 });
-app.get('/test', ()=>console.log("test"));
+
 app.get('/profilo_dati', function(req, res) {
 	//console.log(req.session);
 	//console.log(req.session.user);
