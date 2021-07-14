@@ -80,16 +80,21 @@
     </header>
     <body>
 
-        <div class="container text-center">
-            <a href="https://localhost:3000/profilo"><button class="btn btn-group">IL TUO PROFILO</button></a>
-            &ensp; &ensp;
-            <span class="title">SafeTravel</span>
-            <!--
-            <button id="test" class="btn btn-group">VEDI METE PROPOSTE</button>
-            -->
-            &ensp; &ensp;
-            <a href="https://localhost:3000/mete"><button class="btn btn-group">CERCA UNA META</button></a>
-        </div>
+        <nav class="navbar navbar-default">
+            <div class="container-fluid">
+                <div class="navbar-header">
+                    <a class="navbar-brand" href="#">SafeTravel</a>
+                </div>
+                <ul class="nav navbar-nav">
+                    <li class="active"><a href="#">HOME</a></li>
+                    <li><a href="https://localhost:3000/profilo">IL TUO PROFILO</a></li>
+                    <li><a href="https://localhost:3000/mete">CERCA UN ITINERARIO</a></li>
+                    <li><a href="https://localhost:3000/logout">LOGOUT</a></li>
+                </ul>
+            </div>
+        </nav>
+
+        <div class="title">SafeTravel</div>
         <br/>
         <h4 class="text-center"><b>GLI ITINERARI PROPOSTI DAGLI ALTRI UTENTI:</b></h4>
         <div class="date text-center"></div>
@@ -97,7 +102,6 @@
         <div id="table"></div>
 
         <script>
-
             var ws = new WebSocket("wss://localhost:3000/");
             var GADB;
             var user;            

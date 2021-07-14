@@ -93,6 +93,21 @@
         </style>
     </header>
     <body onload="caricaItinerario()">
+
+        <nav class="navbar navbar-default">
+            <div class="container-fluid">
+                <div class="navbar-header">
+                    <a class="navbar-brand" href="#">SafeTravel</a>
+                </div>
+                <ul class="nav navbar-nav">
+                    <li><a href="https://localhost:3000/home">HOME</a></li>
+                    <li><a href="https://localhost:3000/profilo">IL TUO PROFILO</a></li>
+                    <li><a href="https://localhost:3000/mete">CERCA UN ITINERARIO</a></li>
+                    <li id="login_logout"><a href="https://localhost:3000/logout">LOGOUT</a></li>
+                </ul>
+            </div>
+        </nav>
+
         <div id="itinerario"></div>
         <div class="content-save"></div>
         <br/>
@@ -186,10 +201,18 @@
                             $("#itinerario").html(`
                                 <div class="text-center">
                                     <h2><b>
-                                        QUESTO ITINERARIO NON ESISTE!
+                                        QUESTO ITINERARIO NON &Egrave; PI&Ugrave; DISPONIBILE!
                                     </b></h2>
-                                </div>
+                                    <div>
+                                        <a href="https://localhost:3000/mete">
+                                            <button class="btn btn-group">
+                                            CERCA UN ITINERARIO
+                                            </button>
+                                        </a>
+                                    </div>
+                                </div>                                
                             `);
+                            $(".content-fb").remove();
                             $("#loading").html("");
                             return;
                         } 
@@ -374,7 +397,12 @@
             }
 
             function isSaved(meta_id) {
-                if(user == "") return;                
+                if(user == "") {
+                    $("#login_logout").html(`
+                        <a href="https://localhost:3000/">LOGIN</a>
+                    `);
+                    return;     
+                }           
                 let mete = user.mete;
                 if(mete.includes(meta_id)) {
                     $(".content-save").html(`

@@ -13,8 +13,7 @@ var app = express(); // Express configuration
 
 app.use(express.static(__dirname + '/public')); // serve perchè altrimenti non si carica il file html che contiene la documentazione sulle Api esterne
 //Non cambiare il nome della cartella public, altrimenti devi cambiarlo anche qui e anche sotto.
-//app.use(express.urlencoded({ extended: false }));
-//app.use(cors()); //cors policy
+app.use(cors()); //cors policy
 
 app.use(session({ //SESSION
 	secret: 'RDC-progetto',
@@ -153,7 +152,7 @@ app.get('/cerca_itinerari', function(req,res) {
 		console.log(responseError);
 		console.log("------------------");
 		console.log(req.query);
-		res.send("Errore nel server");
+		res.send("L'itinerario non esiste");
 	});
 
 });
@@ -189,7 +188,18 @@ app.get('/meta_dettagli_data', function(req,res) {
 			res.send(JSON.stringify(itinerario));
 		}
 	}).catch(function(responseError){
-		console.log(responseError.code);
+		console.log(responseError);
+
+		let id = "";
+		for(key in req.query) {
+			console.log(key);
+			if(key == "disponib")
+				id += req.query[key]
+			else
+				id += req.query[key]+"_"
+		}
+		cancellaItinerarioScaduto(id);
+
 		console.log("Errore nel server");
 		res.send("Nessun itinerario trovato");
 	});
@@ -360,6 +370,31 @@ app.get("/condividi",function(req,res){
 
 /*-------------------------------------------*/
 
+function cancellaItinerarioScaduto(id); {
+	return new Promise(function(resolve,reject) {
+		deleteCRUD(itinerariesdb, {"id": id}).then(function() {
+			readCRUD(userdb, {"id": "_all_docs?include_docs=true"}).then(function(res_readi) {
+				let users_id = res_readi.rows.map(x=>x.id);
+				for(let i = 0; i < res_readi.total_rows; i++) {
+					let new_user = {
+						"id": res_readi.rows[i].id,
+						"nome": res_readi.rows[i].doc.nome,
+						"mete": res_readi.rows[i].map(x=>x.mete.filter(y=>y != id));
+					}
+				let new_arr = res_readi.rows.map(x=>x.mete.filter(y=>y != id));
+				}
+				
+			}).catch(function(err) {
+				console.log("Errore get tutti user");
+				reject(err);
+			});
+		}).catch(function(err) {
+			console.log("Errore delete itinerario scaduto");
+			reject(err);
+		});
+	});
+}
+
 function userInfo(token) {
 	return new Promise(function(resolve,reject) {
 		request.get({url:'https://graph.facebook.com/v10.0/me/?fields=name,email,id,birthday,hometown&access_token='+token}, function (err, res_get, body) {
@@ -374,13 +409,18 @@ function userInfo(token) {
 }
 
 function cercaItinerari(origin, destination, departureDate) {
-	/*return amadeus.shopping.flightOffersSearch.get({
+	/*
+	return amadeus.shopping.flightOffersSearch.get({
 			originLocationCode: origin,
 			destinationLocationCode: destination,
 			departureDate: departureDate,
 			adults: '1'
 		});
 	*/
+
+	return new Promise(function(resolve,reject) {
+		reject("rere");
+	});
 	//TESTING MODE:
 	
 	var data = JSON.parse(fs.readFileSync('test_cerca_itinerari.json'));
@@ -666,6 +706,7 @@ app.get("/api/itinerariDatiCovid",function(req,res){
 	});
 });
 
+//Itinerari con dati covid della destinazione aggiornati in tempo reale
 app.get("/api/datiCovidPaesi", function(req,res) {
 	console.log(req.query.coutries);
 	if(typeof(req.query.countries) == "undefined") {

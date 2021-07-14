@@ -65,16 +65,60 @@
             form .container{
                 text-transform: uppercase;
             }
+            .title {
+                font-size: 400%;
+                text-align: center;
+                font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif !important;
+                font-weight: bolder;
+            }
+            .fa-angle-double-right {
+                font-size: larger;
+                font-weight: bolder;
+            }
+
         </style>
     </header>
     <body>
+
+        <nav class="navbar navbar-default">
+            <div class="container-fluid">
+                <div class="navbar-header">
+                    <a class="navbar-brand" href="#">SafeTravel</a>
+                </div>
+                <ul class="nav navbar-nav">
+                    <li><a href="https://localhost:3000/home">HOME</a></li>
+                    <li><a href="https://localhost:3000/profilo">IL TUO PROFILO</a></li>
+                    <li class="active"><a href="#">CERCA UN ITINERARIO</a></li>
+                    <li><a href="https://localhost:3000/logout">LOGOUT</a></li>
+                </ul>
+            </div>
+        </nav>
+
+        <div class="title">Tutti i voli di oltre 500 linee aeree a tua disposizione!</div>
+
         <form name="mainform">
             <div class="container text-center list-group-item">
-                Citt&agrave; di partenza
+                <div class="fa fa-plane"></div>
+                <b>Citt&agrave; di partenza</b>
+                <div class="fa fa-plane"></div> &ensp;
+
                 <input name="origin" list="suggestions" value="BANGKOK (THAILAND)">
-                Citt&agrave; di arrivo
+
+                &ensp;
+                <div class="fa fa-angle-double-right"></div>
+                <div class="fa fa-angle-double-right"></div>
+                <div class="fa fa-angle-double-right"></div>
+                &ensp;
+
+                <div class="fa fa-plane"></div>
+                <b>Citt&agrave; di arrivo</b>
+                <div class="fa fa-plane"></div> &ensp;
+
                 <input name="destination" list="suggestions" value="AARHUS (DENMARK)">
-                Data di partenza
+                
+                <br/>
+                <br/>
+                <b>Data di partenza</b>&ensp;
                 <input type="date" id="depdate" name="departureDate" value="2021-08-01" min="2018-01-01">
                 <br/>
                 <br/>

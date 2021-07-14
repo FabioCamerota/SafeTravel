@@ -70,6 +70,21 @@
         </style>
     </header>
     <body onload="caricaDatiUtente()">
+
+        <nav class="navbar navbar-default">
+            <div class="container-fluid">
+                <div class="navbar-header">
+                    <a class="navbar-brand" href="#">SafeTravel</a>
+                </div>
+                <ul class="nav navbar-nav">
+                    <li><a href="https://localhost:3000/home">HOME</a></li>
+                    <li class="active"><a href="#">IL TUO PROFILO</a></li>
+                    <li><a href="https://localhost:3000/mete">CERCA UN ITINERARIO</a></li>
+                    <li><a href="https://localhost:3000/logout">LOGOUT</a></li>
+                </ul>
+            </div>
+        </nav>
+
         <div class="title"></div>
 
         <div id="table"></div>
@@ -132,7 +147,7 @@
                             $("#table").html(`
                                 <div class="text-center">
                                     <h2><b>
-                                        NON CI SONO ITINERARI CHE TI HANNO INTERESSATO
+                                        NON CI SONO ITINERARI CHE TI INTERESSANO:
                                     </b></h2>
                                     <div>
                                         <a href="https://localhost:3000/mete">
@@ -149,7 +164,7 @@
                         let html = `
                         <div class="text-center">
                             <h2><b>
-                                ECCO GLI ITINERARI CHE TI HANNO INTERESSATO:
+                                ECCO GLI ITINERARI CHE TI INTERESSANO:
                             </b></h2>
                         </div>
                         `;

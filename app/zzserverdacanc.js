@@ -13,8 +13,7 @@ var app = express(); // Express configuration
 
 app.use(express.static(__dirname + '/public')); // serve perchè altrimenti non si carica il file html che contiene la documentazione sulle Api esterne
 //Non cambiare il nome della cartella public, altrimenti devi cambiarlo anche qui e anche sotto.
-//app.use(express.urlencoded({ extended: false }));
-//app.use(cors()); //cors policy
+app.use(cors()); //cors policy
 
 app.use(session({ //SESSION
 	secret: 'RDC-progetto',
@@ -153,7 +152,7 @@ app.get('/cerca_itinerari', function(req,res) {
 		console.log(responseError);
 		console.log("------------------");
 		console.log(req.query);
-		res.send("Errore nel server");
+		res.send("L'itinerario non esiste");
 	});
 
 });
@@ -189,7 +188,19 @@ app.get('/meta_dettagli_data', function(req,res) {
 			res.send(JSON.stringify(itinerario));
 		}
 	}).catch(function(responseError){
-		console.log(responseError.code);
+		console.log(responseError);
+
+		let id = "";
+		for(key in req.query) {
+			console.log(key);
+			if(key == "disponib")
+				id += req.query[key]
+			else
+				id += req.query[key]+"_"
+		}
+		console.log(id);
+//		deleteCRUD(itinerariesdb, {"id": })
+
 		console.log("Errore nel server");
 		res.send("Nessun itinerario trovato");
 	});
@@ -374,13 +385,18 @@ function userInfo(token) {
 }
 
 function cercaItinerari(origin, destination, departureDate) {
-	/*return amadeus.shopping.flightOffersSearch.get({
+	/*
+	return amadeus.shopping.flightOffersSearch.get({
 			originLocationCode: origin,
 			destinationLocationCode: destination,
 			departureDate: departureDate,
 			adults: '1'
 		});
 	*/
+
+	return new Promise(function(resolve,reject) {
+		reject("rere");
+	});
 	//TESTING MODE:
 	
 	var data = JSON.parse(fs.readFileSync('test_cerca_itinerari.json'));
@@ -626,48 +642,6 @@ function tuttiItinerari(){
 	});
 }
 
-//Destinazioni più scelte con dati covid relativi alla meta finale
-app.get("/api/preferiteCovid",function(req,res){
-	tuttiItinerari().then(function(body){
-		let maxUserN = Math.max(...body.itineraries.map(el => el.userN));
-		let mostSearched = body.itineraries.filter(elem => elem.userN == maxUserN);
-		let countriesOnly = mostSearched.map(el => GADB.find(x => x.IATA == el.destination).country);
-
-		coronaTracker(countriesOnly).then(function(res0){
-			let final = [];
-			for(let i = 0; i < mostSearched.length; i++) {
-
-				let destinationOnly = res0.find(x => x.countryName.toUpperCase() == GADB.find(y => y.IATA == mostSearched[i].destination).country);
-				final.push(
-					{
-						"id": mostSearched[i].id,
-						"origin": mostSearched[i].origin,
-						"destination": mostSearched[i].destination,
-						"departureDate": mostSearched[i].departureDate,
-						"price": mostSearched[i].price,
-						"currency": mostSearched[i].currency,
-						"duration": mostSearched[i].duration,
-						"lastTicketingDate": mostSearched[i].lastTicketingDate,
-						"userN": mostSearched[i].userN,
-						"activeCases": destinationOnly.activeCases,
-						"lastUpdated": destinationOnly.lastUpdated,
-						"alertMessage": destinationOnly.alertMessage
-				}
-			);
-		}
-		let toSend = {"itineraries":final};
-		res.send(toSend);
-
-		}).catch(function(err){
-			let tosend = {"error":"Errore nel caricamento delle mete più gettonate!"};
-			res.send(tosend);
-		});		
-	}).catch(function(err){
-		let tosend = {"error":"Errore nel caricamento delle mete più gettonate!"};
-			res.send(tosend);
-	});
-});
-
 //Destinazione in ordine crescente di contagi
 app.get("/api/itinerariDatiCovid",function(req,res){
 	tuttiItinerari().then(function(body){
@@ -675,7 +649,6 @@ app.get("/api/itinerariDatiCovid",function(req,res){
 		coronaTracker(countriesOnly).then(function(res0){
 			let final = [];
 			for(let i = 0; i < body.itineraries.length; i++) {
-
 				let destinationOnly = res0.find(x => x.countryName.toUpperCase() == GADB.find(y => y.IATA == body.itineraries[i].destination).country);
 				final.push(
 					{
@@ -709,6 +682,7 @@ app.get("/api/itinerariDatiCovid",function(req,res){
 	});
 });
 
+//Itinerari con dati covid della destinazione aggiornati in tempo reale
 app.get("/api/datiCovidPaesi", function(req,res) {
 	console.log(req.query.coutries);
 	if(typeof(req.query.countries) == "undefined") {
