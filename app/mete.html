@@ -3,7 +3,7 @@
     <header>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Home</title>
+        <title>SafeTravel - Cerca</title>
         
         <!--JQUERY-->
         <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
@@ -18,7 +18,7 @@
         
         <!--STILI PERSONALIZZATI-->
         <style>
-            .itinerario {
+            .itinerario, #covid {
                 margin: 0.5%;
                 border-radius: 1vw;
                 background-repeat:no-repeat;
@@ -62,25 +62,31 @@
                 0% { transform: rotate(0deg); }
                 100% { transform: rotate(360deg); }
             }
+            form .container{
+                text-transform: uppercase;
+            }
         </style>
     </header>
     <body>
         <form name="mainform">
-            Citt&agrave; di partenza
-            <input name="origin" list="suggestions" value="BANGKOK (THAILAND)">
-            <br/>
-            Citt&agrave; di arrivo
-            <input name="destination" list="suggestions" value="AARHUS (DENMARK)">
-            <br/>
-            Data di partenza
-            <input type="date" id="depdate" name="departureDate" value="2021-08-01" min="2018-01-01">
-            <br/>            
-
-            <button type='button' id="cerca_itinerari">CERCA ITINERARI</button>
-            <datalist id="suggestions">
+            <div class="container text-center list-group-item">
+                Citt&agrave; di partenza
+                <input name="origin" list="suggestions" value="BANGKOK (THAILAND)">
+                Citt&agrave; di arrivo
+                <input name="destination" list="suggestions" value="AARHUS (DENMARK)">
+                Data di partenza
+                <input type="date" id="depdate" name="departureDate" value="2021-08-01" min="2018-01-01">
+                <br/>
+                <br/>
+                <button type='button' class="btn btn-group" id="cerca_itinerari">CERCA ITINERARI</button>
+                <datalist id="suggestions">
+            </div>
             </datalist>
         </form>
-        
+        <br/>
+        <div id="loading"></div>
+        <div id="covid"></div>
+        <br/>
         <div id="table"></div>
 
         <script>
@@ -94,6 +100,25 @@
 
             var GADB;
             var user;
+            var elements2load = 2;
+
+            function convertTime(time) {
+                if(time.includes("M"))
+                    return time.replace("PT","").replace("H"," ORE E ").replace("M", " MINUTI");
+                else {
+                    if(time.replace("PT","").replace("H","") == "1")
+                        return time.replace("PT","").replace("H"," ORA");
+                    else
+                        return time.replace("PT","").replace("H"," ORE");
+                }
+            }
+
+            function convertDate(date) {
+                if(date.includes("."))
+                    return date.split(".")[0].replace("T", " ALLE ");
+                else
+                    return date.replace("T", " ALLE ");
+            }
 
             $.ajax({
                 type: "GET",
@@ -128,49 +153,82 @@
                 }
             });
 
-            $("#cerca_itinerari").click(function() {                
-			    $("#table").html(`<div class="loader"></div>`);
-                var origin = GADB.filter(v=>`${v.city} (${v.country})`==document.mainform.origin.value && v.IATA != "N/A")[0].IATA;
-                var destination = GADB.filter(v=>`${v.city} (${v.country})`==document.mainform.destination.value && v.IATA != "N/A")[0].IATA;
+            $("#cerca_itinerari").click(function() {
+                $("#table").html("");                
+			    $("#loading").html(`<div class="loader"></div>`);
+                
+                var origin = GADB.filter(v=>`${v.city} (${v.country})`==document.mainform.origin.value && v.IATA != "N/A")[0];
+                var destination = GADB.filter(v=>`${v.city} (${v.country})`==document.mainform.destination.value && v.IATA != "N/A")[0];
+
+                if(typeof(origin) == "undefined" || typeof(destination) == "undefined") {
+                    alert("Dati origine o destinazione scorretti!");
+                    $("#loading").html("");
+                    return;
+                }
+
+                origin = origin.IATA;
+                destination = destination.IATA;
                 
                 $.ajax({
                     type: "GET",
                     url: `https://localhost:3000/cerca_itinerari?origin=${origin}&destination=${destination}&departureDate=${document.mainform.departureDate.value}`,
                     success: function(data) {
-                        if(data == "Nessun itinerario trovato")
-                            $("#table").html("Nessun itinerario trovato");
-                        else
+                        if(data == "Nessun itinerario trovato") {
+                            $("#table").html('<h4 class="text-center"><b>NESSUN ITINERARIO TROVATO</b></h4>');
+                            $("#loading").html("");
+                        }
+                        else {
                             data2Flights(JSON.parse(data));
+                            if(--elements2load <= 0) $("#loading").html("");
+                        }
                     },
                     error: function() {
-                        $("#table").html("Nessun itinerario trovato");
-//                        alert("Errore");
+                        $("#table").html('<h4><b class="text-center">NESSUN ITINERARIO TROVATO</b></h4>');
+                        $("#loading").html("");
                     }
                 });
-                
-                /*var httpRequest = new XMLHttpRequest();                
-                httpRequest.onreadystatechange = function(e) {
-                    if (e.target.readyState == XMLHttpRequest.DONE){
-                        data2Flights(JSON.parse(e.target.responseText));
+
+                $.ajax({
+                    type: "GET",
+                    url: `https://localhost:3000/api/datiCovidPaesi?countries=${GADB.find(x=>x.IATA == destination).country}`,
+                    success: function(d) {
+                        let data = d.data;                        
+                        if(data == "Errore di richiesta dati") {
+                            $("#covid").html(`<h4 class="text-center"><b>DATI COVID DI ${GADB.find(x=>x.IATA == destination).country} NON DISPONIBILI</b></h4>`);
+                            if(--elements2load <= 0) $("#loading").html("");
+                        }
+                        else {
+                            //${JSON.stringify(data)}
+                            $("#covid").html(`                            
+                            <div class="list-group-item text-center" style="border-radius: 1vw;">
+                                <h4 class="list-group-item-heading" style="font-weight: bold;">
+                                    <div class="fa fa-exclamation"></div>
+                                    CASI COVID ATTIVI IN ${GADB.find(x=>x.IATA == destination).country}: ${data[0].activeCases}
+                                    <div class="fa fa-exclamation"></div>
+                                </h4>
+                                <div class="list-group-item-text">
+                                    <p>DATO AGGIORNATO IL <b>${convertDate(data[0].lastUpdated)}</b><br/><br/>
+                                    <b>AVVERTENZE:</b><br/> <div style="text-align: left;">${data[0].alertMessage.replaceAll("|","<br/>")}</div></p>
+                                </div>
+                            </div>`);
+                            if(--elements2load <= 0) $("#loading").html("");
+                        }
+                    },
+                    error: function() {
+                        $("#covid").html(`<h4 class="text-center"><b>DATI COVID DI ${GADB.find(x=>x.IATA == destination).country} NON DISPONIBILI</b></h4>`);
+                        $("#loading").html("");
                     }
-                }
-
-                var origin = GADB.filter(v=>`${v.city} (${v.country})`==document.mainform.origin.value)[0].IATA;
-                var destination = GADB.filter(v=>`${v.city} (${v.country})`==document.mainform.destination.value)[0].IATA;
-
-		    	httpRequest.open("GET",`https://localhost:3000/cerca_itinerari?origin=${origin}&destination=${destination}&departureDate=${document.mainform.departureDate.value}`,true);
-	    		httpRequest.send();
-                */
+                });
             });
 
 
-            function data2Flights(flightOffers) {                    //alert(JSON.stringify(user.mete));
+            function data2Flights(flightOffers) {
 
                 $("#table").html(`
                     <div class="container text-center">
-                        <div class="col-md-4"><button id="sort_by_price">I MENO COSTOSI</button></div>
-                        <div class="col-md-4"><button id="sort_by_duration">I PI&Ugrave; VELOCI</button></div>
-                        <div class="col-md-4"><button id="sort_by_numseg">CON POCHI SCALI</button></div>
+                        <div class="col-md-4"><button class="btn btn-primary" id="sort_by_price">ORDINA PER PREZZO DEL VIAGGIO</button></div>
+                        <div class="col-md-4"><button class="btn btn-primary" id="sort_by_duration">ORDINA PER DURATA DEI VOLI</button></div>
+                        <div class="col-md-4"><button class="btn btn-primary" id="sort_by_numseg">ORDINA PER NUMERO DI SCALI</button></div>
                     </div>
                     <br/>
                 `);
@@ -209,7 +267,7 @@
                     html += `<b style="float: right;">${new Intl.NumberFormat('it-IT', { style: 'currency', currency: flightOffer.price.currency }).format(flightOffer.price.grandTotal)}</b></h4>`;
                     html += `<div class="list-group-item-text">
                                 PRENOTAZIONI DISPONIBILI FINO AL <b>${flightOffer.lastTicketingDate}</b><br/>
-                                DURATA DELL'ITINERARIO: <b>${flightOffer.itineraries[0].duration}</b>
+                                DURATA DELL'ITINERARIO: <b>${convertTime(flightOffer.itineraries[0].duration)}</b>
                                 <a class="details" href="https://localhost:3000/meta_dettagli?origin=${origin}&destination=${destination}&departureDate=${departureDate}&prezzo=${flightOffer.price.grandTotal}&currency=${flightOffer.price.currency}&durata=${flightOffer.itineraries[0].duration}&disponib=${flightOffer.lastTicketingDate}" target="_blank">VEDI I DETTAGLI</a>
                                 <br/>`
                     

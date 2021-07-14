@@ -88,12 +88,10 @@ app.get('/home', function(req,res) {
 			else {
 				userInfo(info.access_token).then(function(response) {
 					readCRUD(userdb, {"id": response.id}).then(function(res_read) {
-						req.session.token = info.access_token;
 						req.session.user = res_read;
 						res.sendFile("home.html",{root:__dirname});						
 					}).catch(function(err_read) {
-						createCRUD(userdb, {"id": response.id, "token": info.access_token, "nome": response.name, "mete": []}).then(function(res_create) {
-							req.session.token = info.access_token;
+						createCRUD(userdb, {"id": response.id, "nome": response.name, "mete": []}).then(function(res_create) {
 							req.session.user = {"_id": response.id, "token": info.access_token, "nome": response.name, "mete": []};
 							res.sendFile("home.html",{root:__dirname});
 						}).catch((err_create)=>console.log(err_create));
@@ -115,7 +113,11 @@ app.get('/GADB', function(req,res) {
 });
 
 app.get('/profilo', function(req, res) {
-	res.sendFile("profilo.html",{root:__dirname});
+	if(typeof(req.session.user) != "undefined") {
+		res.sendFile("profilo.html",{root:__dirname});
+	}
+	else
+		res.sendFile("accesso.html",{root:__dirname});
 });
 
 app.get('/profilo_dati', function(req, res) {
@@ -133,12 +135,14 @@ app.get('/profilo_dati', function(req, res) {
 });
 
 app.get('/mete', function(req,res) {
-	res.sendFile("mete.html",{root:__dirname});
+	if(typeof(req.session.user) != "undefined") {
+		res.sendFile("mete.html",{root:__dirname});
+	}
+	else
+		res.sendFile("accesso.html",{root:__dirname});
 });
 
 app.get('/cerca_itinerari', function(req,res) {
-
-	
 	cercaItinerari(req.query.origin,req.query.destination,req.query.departureDate).then(function(response){
 		if(response.data.length == 0)
 			res.send("Nessun itinerario trovato");
@@ -155,13 +159,7 @@ app.get('/cerca_itinerari', function(req,res) {
 });
 
 app.get('/meta_dettagli', function(req,res) {
-/*	console.log(req.session);
-	console.log(req.sessionID);
-	console.log(req.session.user);
-	console.log("TIPO-------------");
-	console.log(typeof(req.session.user));
-	console.log("TIPO-------------");
-	if(typeof(req.session.user) != "undefined") {
+/*	if(typeof(req.session.user) != "undefined") {
 		console.log("QUERY: "+JSON.stringify(req.query));
 		console.log("SESSION: "+JSON.stringify(req.session));
 		res.sendFile("meta_dettagli.html",{root:__dirname});
@@ -194,14 +192,6 @@ app.get('/meta_dettagli_data', function(req,res) {
 		console.log(responseError.code);
 		console.log("Errore nel server");
 		res.send("Nessun itinerario trovato");
-	});
-});
-app.get('/covid', function(req,res) {
-	coronaTracker(req.query.countries).then(function(res1){
-		res.send(res1);
-	}).catch(function(err){
-		console.log(err);
-		res.send(err);
 	});
 });
 
@@ -359,6 +349,15 @@ app.get('/preferito_rimuovi', function(req,res) {
 		console.log(err_readi+": Errore READ ITINERARIES"); res.send("useless data");
 	});
 });
+
+app.get("/condividi",function(req,res){
+	var data = req.query;
+	console.log(data);
+	res.send(`https://www.facebook.com/dialog/share?app_id=${process.env.CLIENT_ID_FB}&display=popup&href=https://127.0.0.1:3000/meta_dettagli?
+		origin=${data.origin}%26destination=${data.destination}%26departureDate=${data.departureDate}%26prezzo=${data.prezzo}%26currency=${data.currency}%26
+		durata=${data.durata}%26disponib=${data.disponib}&quote=Guarda che bel viaggio mi farò!`);	
+});
+
 /*-------------------------------------------*/
 
 function userInfo(token) {
@@ -390,6 +389,36 @@ function cercaItinerari(origin, destination, departureDate) {
 			resolve({"data": data});
 		else
 			reject("NONONO");
+	});
+}
+
+function coronaTracker(countries){
+	return new Promise(function(resolve, reject){
+		request.get({url:"http://api.coronatracker.com/v3/stats/worldometer/country"}, function(err0, res1, body0) {
+			if(err0) {
+				reject("Errore di richiesta dati");
+			}
+			else {
+				request.get({url:"http://api.coronatracker.com/v1/travel-alert"}, function(err1, res1, body1) {
+				if(err1)
+					reject("Errore di richiesta dati");
+				else {
+					resolve(JSON.parse(body0).filter(x=>countries.includes(x.countryName.toUpperCase())).map(function(x) {
+						let obj = {
+								"countryCode": x.countryCode,
+								"country": x.country,
+								"countryName": x.countryName,
+								"activeCases": x.activeCases,
+								"lastUpdated": x.lastUpdated,
+								"alertMessage": JSON.parse(body1).find(y=>y.countryCode==x.countryCode).alertMessage
+							}
+							console.log(JSON.parse(body1).find(y=>y.countryCode==x.countryCode));
+							return obj;
+						}));
+					}
+				});
+			}
+		});
 	});
 }
 
@@ -508,33 +537,27 @@ function deleteCRUD(db,obj) {
 	});
 }
 
-//https://www.facebook.com/dialog/share?app_id=310503350806055&display=popup&href=https://travelfree.altervista.org/&quote=TEST, vota qui: https://locahost:3000/mete
-
 // SEZIONE --- API TERZE
 app.get("/api",function(req,res){
 	res.sendFile("./public/api.html",{root:__dirname});
 });
+
 //Itinerari, per casi
 app.get("/api/tuttiItinerari",function(req,res){
-
 	console.log(req.query);
-	
-
 	//Nessuna origine o destinazione inserita
 	if(typeof(req.query.origin) == 'undefined' && typeof(req.query.destination) == 'undefined' ){
-	tuttiItinerari().then(function(res0){
-		res.send(res0);
-	}).catch(function(err){
-		res.send(err);
-	});
+		tuttiItinerari().then(function(res0){
+			res.send(res0);
+		}).catch(function(err){
+			res.send(err);
+		});
 	}
 	//Solo destinazione inserita
 	else if(typeof(req.query.origin) == 'undefined' && typeof(req.query.destination) != 'undefined'){
 		tuttiItinerari().then(function(res0){
-
-			console.log(res0.itineraries.filter(x => GADB.find(y=> y.IATA == x.destination).city == req.query.destination.toUpperCase()));
-
-			let onlyDestination = res0.itineraries.filter(x => GADB.find(y=> y.IATA == x.destination).city == req.query.destination.toUpperCase() );
+			//let onlyDestination = res0.itineraries.filter(x => GADB.find(y=> y.IATA == x.destination).city == req.query.destination.toUpperCase() );
+			let onlyDestination = res0.itineraries.filter(x => x.destination == req.query.destination.toUpperCase());			
 			res.send({"itineraries": onlyDestination});
 		}).catch(function(err){
 			res.send(err);
@@ -543,7 +566,8 @@ app.get("/api/tuttiItinerari",function(req,res){
 	//Solo origine inserita
 	else if(typeof(req.query.origin) != 'undefined' && typeof(req.query.destination) == 'undefined'){
 		tuttiItinerari().then(function(res0){
-			let onlyOrigin = res0.itineraries.filter(x => GADB.find(y=> y.IATA == x.origin).city == req.query.origin.toUpperCase() );
+			//let onlyOrigin = res0.itineraries.filter(x => GADB.find(y=> y.IATA == x.origin).city == req.query.origin.toUpperCase() );
+			let onlyOrigin = res0.itineraries.filter(x => x.origin == req.query.origin.toUpperCase());			
 			res.send({"itineraries": onlyOrigin});
 		}).catch(function(err){
 			res.send(err);
@@ -552,7 +576,8 @@ app.get("/api/tuttiItinerari",function(req,res){
 	//Origine e destinazione inserite
 	else{
 		tuttiItinerari().then(function(res0){
-			let both = res0.itineraries.filter(x => GADB.find(y=> y.IATA == x.origin).city == req.query.origin.toUpperCase() && GADB.find(y=> y.IATA == x.destination).city == req.query.destination.toUpperCase());
+			//let both = res0.itineraries.filter(x => GADB.find(y=> y.IATA == x.origin).city == req.query.origin.toUpperCase() && GADB.find(y=> y.IATA == x.destination).city == req.query.destination.toUpperCase());
+			let both = res0.itineraries.filter(x => x.origin == req.query.origin.toUpperCase() && x.destination == req.query.destination.toUpperCase());
 			res.send({"itineraries": both});
 		}).catch(function(err){
 			res.send(err);
@@ -586,14 +611,13 @@ function tuttiItinerari(){
 		});
 	});
 }
+
 //Destinazioni più scelte con dati covid relativi alla meta finale
 app.get("/api/preferiteCovid",function(req,res){
 	tuttiItinerari().then(function(body){
 		let maxUserN = Math.max(...body.itineraries.map(el => el.userN));
 		let mostSearched = body.itineraries.filter(elem => elem.userN == maxUserN);
-
 		let countriesOnly = mostSearched.map(el => GADB.find(x => x.IATA == el.destination).country);
-		
 
 		coronaTracker(countriesOnly).then(function(res0){
 			let final = [];
@@ -629,13 +653,11 @@ app.get("/api/preferiteCovid",function(req,res){
 			res.send(tosend);
 	});
 });
+
 //Destinazione in ordine crescente di contagi
-app.get("/api/menoCovid",function(req,res){
+app.get("/api/itinerariDatiCovid",function(req,res){
 	tuttiItinerari().then(function(body){
-
 		let countriesOnly = body.itineraries.map(el => GADB.find(x => x.IATA == el.destination).country);
-		
-
 		coronaTracker(countriesOnly).then(function(res0){
 			let final = [];
 			for(let i = 0; i < body.itineraries.length; i++) {
@@ -655,9 +677,9 @@ app.get("/api/menoCovid",function(req,res){
 						"activeCases": destinationOnly.activeCases,
 						"lastUpdated": destinationOnly.lastUpdated,
 						"alertMessage": destinationOnly.alertMessage
-				}
-			);
-		}
+					}
+				);
+			}
 		let toSend = {"itineraries":final.sort(function(a,b){
 			return a.activeCases - b.activeCases;
 		})};
@@ -672,36 +694,12 @@ app.get("/api/menoCovid",function(req,res){
 			res.send(tosend);
 	});
 });
-//_____________________________________________________________________________________
-function coronaTracker(countries){
-	return new Promise(function(resolve, reject){
-		request.get({url:"http://api.coronatracker.com/v3/stats/worldometer/country"}, function(err0, res1, body0) {
-			if(err0) {
-				reject("Errore di richiesta dati");
-			}
-			else {
-				request.get({url:"http://api.coronatracker.com/v1/travel-alert"}, function(err1, res1, body1) {
-				if(err1)
-					reject("Errore di richiesta dati");
-				else {
-					resolve(JSON.parse(body0).filter(x=>countries.includes(x.countryName.toUpperCase())).map(function(x) {
-						let obj = {
-								"countryCode": x.countryCode,
-								"country": x.country,
-								"countryName": x.countryName,
-								"activeCases": x.activeCases,
-								"lastUpdated": x.lastUpdated,
-								"alertMessage": JSON.parse(body1).find(y=>y.countryCode==x.countryCode).alertMessage
-							}
-							console.log(JSON.parse(body1).find(y=>y.countryCode==x.countryCode));
-							return obj;
-						}));
-					}
-				});
-			}
-		});
+
+app.get("/api/datiCovidPaesi", function(req,res) {
+	coronaTracker(req.query.countries).then(function(res1){
+		res.send({"data": res1});
+	}).catch(function(err){
+		console.log(err);
+		res.send({"error": "Errore nel caricamento dei dati covid!"});
 	});
-
-}
-
-//https://www.facebook.com/dialog/share?app_id=310503350806055&display=popup&href=https://127.0.0.1:3000/meta_dettagli?origin=BKK%26destination=AAR%26departureDate=2021-08-01%26prezzo=1034.80%26currency=EUR%26durata=PT42H%26disponib=2021-06-28&quote=Guarda che bel viaggio mi farò!
+});

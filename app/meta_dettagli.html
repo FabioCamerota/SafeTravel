@@ -3,7 +3,7 @@
     <header>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Home</title>
+        <title>SafeTravel - Dettagli</title>
         
         <!--JQUERY-->
         <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
@@ -69,12 +69,42 @@
                 align-items: center; 
                 justify-content: center;
             }
+            hr {
+                height:2px;
+                border-width:0;
+                color:lightblue;
+                background-color:lightblue;
+            }
+            .content-fb {
+                font-size: 20px;
+                cursor: pointer;
+                opacity: 0.8;
+                float: right;
+            }
+            .content-fb:hover {
+                opacity: 1;
+            }
+            .title {
+                font-size: 400%;
+                text-align: center;
+                font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif !important;
+                font-weight: bolder;
+            }
         </style>
     </header>
     <body onload="caricaItinerario()">
-        <div class="content-save" align="center"></div>
         <div id="itinerario"></div>
+        <div class="content-save"></div>
+        <br/>
+        <div align="right" class="content-fb btn btn-primary">
+            <img src="https://cdn.usbrandcolors.com/images/logos/facebook-logo.svg" width="30px">
+            CONDIVIDI SU FACEBOOK QUESTO ITINERARIO!
+        </div>
         <div id="loading"><div class="loader"></div></div>
+        <br/>
+        <br/>
+        <br/>
+        <br/>
 
 
         <script>
@@ -82,6 +112,19 @@
             var user;
             var GADB;
             var elements2load = 3;
+
+            $(".content-fb").click(function() {
+                $.ajax({
+                    type: "GET",
+                    url: "https://localhost:3000/condividi"+window.location.search,
+                    success: function(result){
+                        window.open(result,"poppopupWindow", "top=100,scrollbars=yes");
+                    },
+                    error: function(){
+                        alert("Errore");
+                    }
+                })
+            });
 
             $.ajax({
                 type: "GET",
@@ -170,7 +213,7 @@
                         $("#itinerario").html(`
 
                             <div class="text-center">
-                                <h2><b>
+                                <div class="title"><b>
                                     <div class="fa fa-plane"></div>
                                     ${origin}
                                     <div class="fa fa-angle-double-right"></div>
@@ -178,13 +221,12 @@
                                     <div class="fa fa-angle-double-right"></div> 
                                     ${destination}
                                     <div class="fa fa-plane"></div>
-                                </b></h2>
+                                </b></div>
                                 <h3>PREZZO: <b>${new Intl.NumberFormat('it-IT', { style: 'currency', currency: data.price.currency }).format(data.price.grandTotal)}</b></h3>
-                                <h3>PRENOTAZIONI DISPONIBILI FINO AL <b>${data.lastTicketingDate}</b></h3>
                                 <h3>DURATA DELL'ITINERARIO: <b>${convertTime(data.itineraries[0].duration)}</b></h3>
+                                <h3>PRENOTAZIONI DISPONIBILI FINO AL <b>${data.lastTicketingDate}</b></h3>
                             </div>
-
-
+                            <hr/>
                             <div class="content-photos" align="center"></div>
                             <div class="content-airline" align="center"></div>
                         `);
@@ -312,7 +354,7 @@
                                     <a href="${url}" target="_blank">
                                         <img width="150px" src=${data}>
                                         <br/>
-                                        <h4 class="btn btn-primary">PRENOTA SUBITO!</h4>
+                                        <h4 class="btn btn-primary" style="font-size: 20px;">PRENOTA SUBITO!</h4>
                                         <br/>
                                         <br/>
                                     </a>
@@ -406,10 +448,11 @@
             function covidData(allcountries) {
                 $.ajax({
                     type: "GET",
-                    url: `https://localhost:3000/covid`,
+                    url: `https://localhost:3000/api/datiCovidPaesi`,
                     contentType: 'application/json',
                     data: {"countries": allcountries},
-                    success: function(data) {
+                    success: function(d) {
+                        let data = d.data;
 //                        $("#itinerario").append(JSON.stringify(data));
                         for(let i = 0; i < data.length; i++) {
                             
@@ -417,7 +460,7 @@
                             <div class="list-group-item covid text-center">
                                 <h4 class="list-group-item-heading" style="font-weight: bold;">
                                     <div class="fa fa-exclamation"></div>
-                                    CASI COVID ATTIVI: ${data[i].activeCases}
+                                    CASI COVID ATTIVI IN ${data[i].countryName.toUpperCase()}: ${data[i].activeCases}
                                     <div class="fa fa-exclamation"></div>
                                 </h4>
                                 <div class="list-group-item-text">

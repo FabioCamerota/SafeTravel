@@ -3,8 +3,7 @@
     <header>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Home</title>
-
+        <title>SafeTravel - Home</title>
 
         <!--JQUERY-->
         <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
@@ -46,23 +45,62 @@
                 color: orange;
                 cursor: pointer;
             }
+            .loader {
+                position: relative;
+                display: block;
+                margin-left: auto;
+                margin-right: auto;
+
+                border: 16px solid #f3f3f3;
+                border-radius: 50%;
+                border-top: 16px solid #3498db;
+                width: 120px;
+                height: 120px;
+                animation: spin 2s linear infinite;
+            }
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+            .title {
+                font-size: 400%;
+                text-align: center;
+                font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif !important;
+                font-weight: bolder;
+            }
+            .btn-group {
+                font-size: larger;
+                color: black;
+                opacity: 1;
+            }
+            .btn-group:hover {
+                opacity: 0.5;
+            }
         </style>
     </header>
     <body>
-        <a href="https://localhost:3000/profilo">
-            <button>il tuo profilo</button>
-        </a>
-        <button id="test">vedi mete proposte</button>
-        <a href="https://localhost:3000/mete">
-            <button>cerca una meta</button>
-        </a>
+
+        <div class="container text-center">
+            <a href="https://localhost:3000/profilo"><button class="btn btn-group">IL TUO PROFILO</button></a>
+            &ensp; &ensp;
+            <span class="title">SafeTravel</span>
+            <!--
+            <button id="test" class="btn btn-group">VEDI METE PROPOSTE</button>
+            -->
+            &ensp; &ensp;
+            <a href="https://localhost:3000/mete"><button class="btn btn-group">CERCA UNA META</button></a>
+        </div>
+        <br/>
+        <h4 class="text-center"><b>GLI ITINERARI PROPOSTI DAGLI ALTRI UTENTI:</b></h4>
+        <div class="date text-center"></div>
+        <br/>
         <div id="table"></div>
 
         <script>
 
             var ws = new WebSocket("wss://localhost:3000/");
             var GADB;
-            var user;
+            var user;            
 
             $.ajax({
                 type: "GET",
@@ -85,12 +123,47 @@
                 }
             });
 
+            function convertTime(time) {
+                if(time.includes("M"))
+                    return time.replace("PT","").replace("H"," ORE E ").replace("M", " MINUTI");
+                else {
+                    if(time.replace("PT","").replace("H","") == "1")
+                        return time.replace("PT","").replace("H"," ORA");
+                    else
+                        return time.replace("PT","").replace("H"," ORE");
+                }
+            }
+
+            function convertDate(date) {
+                if(date.includes("."))
+                    return date.split(".")[0].replace("T", " ALLE ");
+                else
+                    return date.replace("T", " ALLE ");
+            }
+
             function caricaDatiItinerari() {
+                /*
+                $(".date").html(`
+                    AGGIORNATO ${new Date().getTime() / 1000}
+                    ${JSON.stringify(new Date())}
+                `);
+                */
+                $("#table").html(`<div class="loader"></div>`);
                 $.ajax({
                     type: "GET",
                     url: "https://localhost:3000/api/tuttiItinerari",
                     success: function(data) {
-                        caricaDatiUtente(data.itineraries);
+                        if(data.itineraries.length == 0) {
+                            $("#table").html(`
+                                <div class="text-center">
+                                    <h2><b>
+                                        NON ABBIAMO ITINERARI DA PROPORTI!
+                                    </b></h2>
+                                </div>
+                            `);
+                        }
+                        else
+                            caricaDatiUtente(data.itineraries);
                     },
                     error: function() {
                         $("#table").html("Errore");
@@ -102,15 +175,22 @@
                 caricaDatiItinerari();
             }
 
-            $("#test").click(caricaDatiItinerari);
+            caricaDatiItinerari();
 
             function caricaDatiUtente(itineraries) {
-
-
                 $.ajax({
                     type: "GET",
                     url: "https://localhost:3000/profilo_dati",
                     success: function(data) {
+                        $("#table").html(`
+                            <div class="container text-center">
+                                <div class="col-md-4"><button class="btn btn-primary" id="sort_by_price">ORDINA PER PREZZO DEL VIAGGIO</button></div>
+                                <div class="col-md-4"><button class="btn btn-primary" id="sort_by_duration">ORDINA PER DURATA DEI VOLI</button></div>
+                                <div class="col-md-4"><button class="btn btn-primary" id="sort_by_usern">ORDINA PER METE PI&Ugrave; SCELTE</button></div>
+                            </div>
+                            <br/>
+                        `);
+
                         user = data;
                         let html = "";
 
@@ -139,7 +219,7 @@
                             html += `<b style="float: right;">${new Intl.NumberFormat('it-IT', { style: 'currency', currency: dettagliMeta[4] }).format(dettagliMeta[3])}</b></h4>`;
                             html += `<div class="list-group-item-text">
                                 PRENOTAZIONI DISPONIBILI FINO AL <b>${dettagliMeta[6]}</b><br/>
-                                DURATA DELL'ITINERARIO: <b>${dettagliMeta[5]}</b>
+                                DURATA DELL'ITINERARIO: <b>${convertTime(dettagliMeta[5])}</b>
                                 <a class="details" href="https://localhost:3000/meta_dettagli${hiddenURL}" target="_blank">VEDI I DETTAGLI</a>
                                 <br/>`
                             
@@ -171,7 +251,7 @@
                             </div>
                             </div>`;
                         }
-                        $("#table").html(html);
+                        $("#table").append(html);
                         
                         $(".isFavourite").click(function() {
                             let meta_id = $(this).next("p").text().substring(1).split("&").map(x=>x.split("=")[1]).reduce((a,b)=>a+"_"+b);
@@ -201,6 +281,29 @@
                                     alert("Errore");
                                 }
                             });
+                        });
+
+                        $("#sort_by_price").click(function() {
+                            let sorted_data = itineraries.sort(function(a,b) {
+                                return a.price-b.price;
+                            });
+                            caricaDatiUtente(sorted_data);
+                        });
+
+                        $("#sort_by_duration").click(function() {
+                            let sorted_data = itineraries.sort(function(a,b) {
+                                if(a.duration > b.duration) return 1;
+                                else if(a.duration < b.duration) return -1;
+                                else return 0;
+                            });
+                            caricaDatiUtente(sorted_data);
+                        });
+
+                        $("#sort_by_usern").click(function() {
+                            let sorted_data = itineraries.sort(function(a,b) {
+                                return b.userN - a.userN;
+                            });
+                            caricaDatiUtente(sorted_data);
                         });
                     },
                     error: function() {

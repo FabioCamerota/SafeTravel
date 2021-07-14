@@ -3,18 +3,39 @@
     <header>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Home</title>
+        <title>SafeTravel - Accedi</title>
+        
+        <!--JQUERY-->
         <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+
+        <!--BOOSTRAP-->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+
+        <!--FONT AWESOME-->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+        <!--STILI PERSONALIZZATI-->
+        <style>
+            .title {
+                font-size: 400%;
+                text-align: center;
+                font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif !important;
+                font-weight: bolder;
+            }
+        </style>
     </header>
     <body>
-        <a href="https://localhost:3000/login">
-            <button id="login">login</button>
-        </a>
-        <a href="https://localhost:3000/logout">
-            <button id="logout">logout</button>
-        </a>
+        <div class="text-center">
+            <div class="title">SafeTravel</div>
+            <a href="https://localhost:3000/login" class="btn btn-primary">
+                <img src="https://cdn.usbrandcolors.com/images/logos/facebook-logo.svg" width="30px">
+                ACCEDI CON FACEBOOK
+            </a>
+        </div>
+
         <script>
-            
             $("#login").click(function() {
 			    var httpRequest = new XMLHttpRequest();
 			    httpRequest.onreadystatechange = function(e) {
