@@ -260,7 +260,7 @@
                         success: function(data) {
                             ris.push({
                                 "city": allcities[i],
-                                "country": allcities[i].split(" ")[1].replace("(","").replace(")",""),
+                                "country": allcities[i].split(" (")[allcities[i].split(" (").length-1].replace(")",""),
                                 "num": i,
                                 "url": data
                             });
@@ -307,7 +307,7 @@
                                     
                                     $("#itinerario .content-photos").append(`
                                         <div class="container-fluid" style="vertical-align: middle;">
-                                            <div class="row ${ris[j].country}">
+                                            <div class="row ${ris[j].country.replaceAll(" ","_").toUpperCase()}">
                                                 <div class="col-md-4 tappa">
                                                     ${data2append}
                                                 </div>
@@ -325,7 +325,7 @@
                                     `);
                                 }
                                 if(--elements2load <= 0) $("#loading").html("");
-                                covidData(allcities.map(x=>x.split(" ")[1].replace("(","").replace(")","")));
+                                covidData(allcities.map(x=>x.split(" (")[x.split.length-1].replace(")","")));
                             }
                         },
                         error: function() {
@@ -453,14 +453,14 @@
                     data: {"countries": allcountries},
                     success: function(d) {
                         let data = d.data;
-//                        $("#itinerario").append(JSON.stringify(data));
+                        //$("#itinerario").append(JSON.stringify(data));
                         for(let i = 0; i < data.length; i++) {
                             
                             let data2append = `
                             <div class="list-group-item covid text-center">
                                 <h4 class="list-group-item-heading" style="font-weight: bold;">
                                     <div class="fa fa-exclamation"></div>
-                                    CASI COVID ATTIVI IN ${data[i].countryName.toUpperCase()}: ${data[i].activeCases}
+                                    CASI ATTIVI IN ${data[i].countryName.toUpperCase()}: ${data[i].activeCases}
                                     <div class="fa fa-exclamation"></div>
                                 </h4>
                                 <div class="list-group-item-text">
@@ -469,7 +469,7 @@
                                 </div>
                             </div>`;
 
-                            $(`.${data[i].country.toUpperCase()} .covid`).html(`
+                            $(`.${data[i].country.replaceAll(" ","_").toUpperCase()} .covid`).html(`
                                 ${data2append}
                             `);
                         }

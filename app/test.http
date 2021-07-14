@@ -86,4 +86,13 @@ GET http://api.coronatracker.com/v1/travel-alert?countryCode=FR
 GET https://127.0.0.1:3000/profilo
 
 ###
-GET https://127.0.0.1:3000/api/datiCovidPaesi?countries[0]=THAILAND&countries[1]=QATAR
+GET https://127.0.0.1:3000/api/datiCovidPaesi
+
+###
+GET https://127.0.0.1:3000/api/datiCovidPaesi?countries=New%20Caledonia
+
+###
+GET https://127.0.0.1:3000/api/datiCovidPaesi?countries[0]=THAILAND&countries[1]=New%20Caledonia
+
+###
+GET https://127.0.0.1:3000/api/datiCovidPaesi?countries[0]=THAILAND&countries[1]=UNITED%20ARAB%20EMIRATES

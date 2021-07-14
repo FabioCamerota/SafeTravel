@@ -14,7 +14,7 @@ var app = express(); // Express configuration
 app.use(express.static(__dirname + '/public')); // serve perchè altrimenti non si carica il file html che contiene la documentazione sulle Api esterne
 //Non cambiare il nome della cartella public, altrimenti devi cambiarlo anche qui e anche sotto.
 //app.use(express.urlencoded({ extended: false }));
-app.use(cors()); //cors policy
+//app.use(cors()); //cors policy
 
 app.use(session({ //SESSION
 	secret: 'RDC-progetto',
@@ -393,6 +393,8 @@ function cercaItinerari(origin, destination, departureDate) {
 }
 
 function coronaTracker(countries){
+	console.log("TRACKER-----------------------")
+	console.log(countries);
 	return new Promise(function(resolve, reject){
 		request.get({url:"http://api.coronatracker.com/v3/stats/worldometer/country"}, function(err0, res1, body0) {
 			if(err0) {
@@ -403,16 +405,28 @@ function coronaTracker(countries){
 				if(err1)
 					reject("Errore di richiesta dati");
 				else {
-					resolve(JSON.parse(body0).filter(x=>countries.includes(x.countryName.toUpperCase())).map(function(x) {
+					resolve(JSON.parse(body0).filter(x=>countries.map(y=>y.replace(/%20/g, ' ').toUpperCase()).includes(x.countryName.toUpperCase())).map(function(x) {
+						let alertMessage = "";
+						let countryCode = x.countryCode;
+						if(x.countryCode == null) {
+							let tmp = JSON.parse(body1).find(y=>y.countryName.toUpperCase()==x.countryName.toUpperCase());
+							console.log(tmp);
+							countryCode = tmp.countryCode;
+							console.log(tmp.countryCode);
+							console.log(tmp.alertMessage);
+							alertMessage = tmp.alertMessage;
+						}
+						else {
+							alertMessage = JSON.parse(body1).find(y=>y.countryCode==x.countryCode).alertMessage;
+						}
 						let obj = {
-								"countryCode": x.countryCode,
+								"countryCode": countryCode,
 								"country": x.country,
 								"countryName": x.countryName,
 								"activeCases": x.activeCases,
 								"lastUpdated": x.lastUpdated,
-								"alertMessage": JSON.parse(body1).find(y=>y.countryCode==x.countryCode).alertMessage
+								"alertMessage": alertMessage
 							}
-							console.log(JSON.parse(body1).find(y=>y.countryCode==x.countryCode));
 							return obj;
 						}));
 					}
@@ -612,48 +626,6 @@ function tuttiItinerari(){
 	});
 }
 
-//Destinazioni più scelte con dati covid relativi alla meta finale
-app.get("/api/preferiteCovid",function(req,res){
-	tuttiItinerari().then(function(body){
-		let maxUserN = Math.max(...body.itineraries.map(el => el.userN));
-		let mostSearched = body.itineraries.filter(elem => elem.userN == maxUserN);
-		let countriesOnly = mostSearched.map(el => GADB.find(x => x.IATA == el.destination).country);
-
-		coronaTracker(countriesOnly).then(function(res0){
-			let final = [];
-			for(let i = 0; i < mostSearched.length; i++) {
-
-				let destinationOnly = res0.find(x => x.countryName.toUpperCase() == GADB.find(y => y.IATA == mostSearched[i].destination).country);
-				final.push(
-					{
-						"id": mostSearched[i].id,
-						"origin": mostSearched[i].origin,
-						"destination": mostSearched[i].destination,
-						"departureDate": mostSearched[i].departureDate,
-						"price": mostSearched[i].price,
-						"currency": mostSearched[i].currency,
-						"duration": mostSearched[i].duration,
-						"lastTicketingDate": mostSearched[i].lastTicketingDate,
-						"userN": mostSearched[i].userN,
-						"activeCases": destinationOnly.activeCases,
-						"lastUpdated": destinationOnly.lastUpdated,
-						"alertMessage": destinationOnly.alertMessage
-				}
-			);
-		}
-		let toSend = {"itineraries":final};
-		res.send(toSend);
-
-		}).catch(function(err){
-			let tosend = {"error":"Errore nel caricamento delle mete più gettonate!"};
-			res.send(tosend);
-		});		
-	}).catch(function(err){
-		let tosend = {"error":"Errore nel caricamento delle mete più gettonate!"};
-			res.send(tosend);
-	});
-});
-
 //Destinazione in ordine crescente di contagi
 app.get("/api/itinerariDatiCovid",function(req,res){
 	tuttiItinerari().then(function(body){
@@ -661,7 +633,6 @@ app.get("/api/itinerariDatiCovid",function(req,res){
 		coronaTracker(countriesOnly).then(function(res0){
 			let final = [];
 			for(let i = 0; i < body.itineraries.length; i++) {
-
 				let destinationOnly = res0.find(x => x.countryName.toUpperCase() == GADB.find(y => y.IATA == body.itineraries[i].destination).country);
 				final.push(
 					{
@@ -691,15 +662,29 @@ app.get("/api/itinerariDatiCovid",function(req,res){
 		});		
 	}).catch(function(err){
 		let tosend = {"error":"Errore nel caricamento delle mete più gettonate!"};
-			res.send(tosend);
+		res.send(tosend);
 	});
 });
 
 app.get("/api/datiCovidPaesi", function(req,res) {
-	coronaTracker(req.query.countries).then(function(res1){
-		res.send({"data": res1});
-	}).catch(function(err){
-		console.log(err);
-		res.send({"error": "Errore nel caricamento dei dati covid!"});
-	});
+	console.log(req.query.coutries);
+	if(typeof(req.query.countries) == "undefined") {
+		res.send({"error": "Errore, inserire almeno un paese!"});
+	}
+	else if(Array.isArray(req.query.countries)) {
+		coronaTracker(req.query.countries).then(function(res1){
+			res.send({"data": res1});
+		}).catch(function(err){
+			console.log(err);
+			res.send({"error": "Errore nel caricamento dei dati covid!"});
+		});
+	}
+	else {
+		coronaTracker([req.query.countries]).then(function(res1){
+			res.send({"data": res1});
+		}).catch(function(err){
+			console.log(err);
+			res.send({"error": "Errore nel caricamento dei dati covid!"});
+		});
+	}
 });
