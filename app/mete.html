@@ -83,14 +83,17 @@
         <nav class="navbar navbar-default">
             <div class="container-fluid">
                 <div class="navbar-header">
-                    <a class="navbar-brand" href="#">SafeTravel</a>
+                    <a class="navbar-brand" href="">SafeTravel</a>
                 </div>
                 <ul class="nav navbar-nav">
                     <li><a href="https://localhost:3000/home">HOME</a></li>
                     <li><a href="https://localhost:3000/profilo">IL TUO PROFILO</a></li>
-                    <li class="active"><a href="#">CERCA UN ITINERARIO</a></li>
+                    <li class="active"><a href="">CERCA UN ITINERARIO</a></li>
                     <li><a href="https://localhost:3000/logout">LOGOUT</a></li>
                 </ul>
+                <a href="https://localhost:3000/profilo">
+                    <li class="nav navbar-nav profile_pic" style="float: right;"></li>
+                </a>
             </div>
         </nav>
 
@@ -135,10 +138,10 @@
 
         <script>
             var ws = new WebSocket("wss://localhost:3000/");
-            n =  new Date();
-            y = n.getFullYear();
-            m = n.getMonth() + 1; if(m < 10) m = "0"+m;
-            d = n.getDate(); if(d < 10) d = "0"+d;
+            let n =  new Date();
+            let y = n.getFullYear();
+            let m = n.getMonth() + 1; if(m < 10) m = "0"+m;
+            let d = n.getDate(); if(d < 10) d = "0"+d;
             $("#depdate").attr("min",`${y}-${m}-${d}`);
             //$("#depdate").attr("value",`${y}-${m}-${d}`);
 
@@ -191,6 +194,9 @@
                 async: false,
                 success: function(data) {
                         user = data;
+                        $(".profile_pic").append(`
+                            <img class="navbar-right" src="${user.pic}"  style="border-radius: 0.5vw; margin-right:2%;" width="50">
+                        `);
                     },
                 error: function() {
                     alert("Errore");
@@ -343,7 +349,7 @@
                     let meta_id = $(this).next("p").text().substring(1).split("&").map(x=>x.split("=")[1]).reduce((a,b)=>a+"_"+b);
                     $.ajax({
                         type: "GET",
-                        url: "https://localhost:3000/preferito_rimuovi"+$(this).next("p").text()+`&user=${user._id}&meta_id=${meta_id}`,
+                        url: "https://localhost:3000/preferito_rimuovi"+$(this).next("p").text()+`&user=${user.id}&meta_id=${meta_id}`,
                         success: function(d) {
                             ws.send("aggiorna");
                             $.ajax({
@@ -368,7 +374,7 @@
                     let meta_id = $(this).next("p").text().substring(1).split("&").map(x=>x.split("=")[1]).reduce((a,b)=>a+"_"+b);
                     $.ajax({
                         type: "GET",
-                        url: "https://localhost:3000/preferito_aggiungi"+$(this).next("p").text()+`&user=${user._id}&meta_id=${meta_id}`,
+                        url: "https://localhost:3000/preferito_aggiungi"+$(this).next("p").text()+`&user=${user.id}&meta_id=${meta_id}`,
                         success: function(d) {
                             ws.send("aggiorna");
                             $.ajax({

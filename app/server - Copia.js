@@ -453,16 +453,6 @@ function cercaItinerari(origin, destination, departureDate) {
 			departureDate: departureDate,
 			adults: '1'
 		});
-	
-	//TESTING MODE:	
-	var data = JSON.parse(fs.readFileSync('test_cerca_itinerari.json'));
-	return new Promise(function(resolve,reject) {
-		if(data.length > 0)
-			resolve({"data": data});
-		else
-			reject("NONONO");
-	});
-
 }
 
 function coronaTracker(countries) {

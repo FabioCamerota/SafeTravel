@@ -74,14 +74,17 @@
         <nav class="navbar navbar-default">
             <div class="container-fluid">
                 <div class="navbar-header">
-                    <a class="navbar-brand" href="#">SafeTravel</a>
+                    <a class="navbar-brand" href="">SafeTravel</a>
                 </div>
                 <ul class="nav navbar-nav">
                     <li><a href="https://localhost:3000/home">HOME</a></li>
-                    <li class="active"><a href="#">IL TUO PROFILO</a></li>
+                    <li class="active"><a href="">IL TUO PROFILO</a></li>
                     <li><a href="https://localhost:3000/mete">CERCA UN ITINERARIO</a></li>
                     <li><a href="https://localhost:3000/logout">LOGOUT</a></li>
                 </ul>
+                <a href="https://localhost:3000/profilo">
+                    <li class="nav navbar-nav profile_pic" style="float: right;"></li>
+                </a>
             </div>
         </nav>
 
@@ -141,6 +144,9 @@
                     url: "https://localhost:3000/profilo_dati",
                     success: function(data) {
                         user = data;
+                        $(".profile_pic").append(`
+                            <img class="navbar-right" src="${user.pic}"  style="border-radius: 0.5vw; margin-right:2%;" width="50">
+                        `);
                         $(".title").html("Bentornato "+user.nome+"!");
 
                         if(user.mete.length == 0) {
@@ -209,7 +215,7 @@
                             let meta_id = $(this).next("p").text().substring(1).split("&").map(x=>x.split("=")[1]).reduce((a,b)=>a+"_"+b);
                             $.ajax({
                                 type: "GET",
-                                url: "https://localhost:3000/preferito_rimuovi"+$(this).next("p").text()+`&user=${user._id}&meta_id=${meta_id}`,
+                                url: "https://localhost:3000/preferito_rimuovi"+$(this).next("p").text()+`&user=${user.id}&meta_id=${meta_id}`,
                                 success: function(d) {
                                     ws.send("aggiorna");
                                     caricaDatiUtente();

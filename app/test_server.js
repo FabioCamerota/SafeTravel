@@ -8,7 +8,6 @@ const cors = require('cors');
 const Amadeus = require('amadeus');
 const { image_search, image_search_generator } = require("duckduckgo-images-api");
 const WebSocket = require('ws');
-const { response } = require('express');
 
 var app = express(); // Express configuration
 
@@ -90,24 +89,23 @@ app.get('/home', function(req,res) {
 					readCRUD(userdb, {"id": response.id}).then(function(res_read) {
 						updateCRUD(userdb, {"id": response.id, "nome": res_read.nome, "pic": response.pic, "mete": res_read.mete}).then(function(res_update) {
 							req.session.user = {"id": response.id, "nome": res_read.nome, "pic": response.pic, "mete": res_read.mete};
-							console.log("DONE /home ho fatto update dell'user: "+response.id);
 							res.sendFile("home.html",{root:__dirname});	
 						}).catch(function(err_update) {
-							console.log("ERROR /home update user: "+err_update);
-							res.send("ERROR update user: "+err_update);
+							console.log("Errore update user: "+err_update);
+							res.send("Errore update user: "+err_update);
 						});
 					}).catch(function(err_read) {
+						console.log(response.pic);
 						createCRUD(userdb, {"id": response.id, "nome": response.name, "pic": response.pic, "mete": []}).then(function(res_create) {
 							req.session.user = {"id": response.id, "nome": response.name, "pic": response.pic, "mete": []};
-							console.log("DONE /home ho create un nuovo user: "+response.id);
 							res.sendFile("home.html",{root:__dirname});
 						}).catch(function(err_create) {
-							console.log("ERROR /home create user: "+err_create);
-							res.send("ERROR create user: "+err_create);
+							console.log("Errore create user: "+err_create);
+							res.send("Errore create user: "+err_create);
 						});
 					});
 				}).catch(function(err) {
-					console.log("ERROR /home userInfo: "+err);
+					console.log("Errore userInfo: "+err);
 					res.redirect("/");
 				});
 			}
@@ -131,13 +129,15 @@ app.get('/profilo', function(req, res) {
 });
 
 app.get('/profilo_dati', function(req, res) {
+	console.log("Su proflo dati sto mandando: ");
+	console.log(req.session.user);
 	readCRUD(userdb,{"id":req.session.user.id}).then(function(res_readu) {
 		req.session.user = {"id": res_readu._id, "nome": res_readu.nome, "pic": res_readu.pic, "mete": res_readu.mete};
-		console.log("DONE /profilo_dati ho fatto la read e sto mandando: "); console.log(req.session.user);
+		console.log(req.session.user);
 		res.send(req.session.user);
 	}).catch(function(err) {
-		console.log("ERROR /profilo_dati: "+err);
-		res.send("ERROR /profilo_dati: "+err);
+		console.log("Errore nell'ottenre i dati dell'utente: "+err);
+		res.send("Errore nell'ottenre i dati dell'utente: "+err);
 	});
 });
 
@@ -151,13 +151,15 @@ app.get('/mete', function(req,res) {
 
 app.get('/cerca_itinerari', function(req,res) {
 	cercaItinerari(req.query.origin,req.query.destination,req.query.departureDate).then(function(response){
-		console.log("DONE /cerca_itinerari sto mandando: "); console.log(response.data);
 		if(response.data.length == 0)
 			res.send("Nessun itinerario trovato");
 		else
 			res.send(JSON.stringify(response.data));
 	}).catch(function(responseError){
-		console.log("ERROR /cerca_itinerari: "+responseError);
+		console.log(responseError.code);
+		console.log(responseError);
+		console.log("------------------");
+		console.log(req.query);
 		res.send("L'itinerario non esiste");
 	});
 
@@ -176,19 +178,10 @@ app.get('/meta_dettagli', function(req,res) {
 });
 
 app.get('/meta_dettagli_data', function(req,res) {
-	let id = "";
-	for(key in req.query) {
-		console.log(key);
-		if(key == "disponib")
-			id += req.query[key]
-		else
-			id += req.query[key]+"_"
-	}
 	console.log(req.query);
 	cercaItinerari(req.query.origin,req.query.destination,req.query.departureDate).then(function(response){
+		console.log(response.data);
 		if(response.data.length == 0) {
-			cancellaItinerarioScaduto(id).then(()=>	console.log("DONE /meta_dettagli_data aggiornato utenti e cancellato itinerario: "+id))
-				.catch((err)=>console.log("ERROR /meta_dettagli_data cancellazione itinerario: "+err));
 			console.log("Nessun itinerario trovato");
 			res.send("Nessun itinerario trovato");
 		}
@@ -198,21 +191,24 @@ app.get('/meta_dettagli_data', function(req,res) {
 				v.lastTicketingDate == req.query.disponib &&
 				v.price.grandTotal == req.query.prezzo;
 			})[0];
-			if(typeof(itinerario) == "undefined") {
-				cancellaItinerarioScaduto(id).then(()=>	console.log("DONE /meta_dettagli_data aggiornato utenti e cancellato itinerario: "+id))
-					.catch((err)=>console.log("ERROR /meta_dettagli_data cancellazione itinerario: "+err));
-				console.log("Nessun itinerario trovato");
-				res.send("Nessun itinerario trovato");
-			}
-			else {
-				console.log("DONE /meta_dettagli_data trovato itinerario sto mandando: "); console.log(itinerario);
-				res.send(JSON.stringify(itinerario));
-			}
+			console.log("sending");
+			console.log(itinerario);
+			res.send(JSON.stringify(itinerario));
 		}
 	}).catch(function(responseError){
-		cancellaItinerarioScaduto(id).then(()=>	console.log("DONE /meta_dettagli_data aggiornato utenti e cancellato itinerario: "+id))
-			.catch((err)=>console.log("ERROR /meta_dettagli_data cancellazione itinerario: "+err));
-		console.log("ERROR /meta_dettagli_data cercaItinerari: "+responseError);
+		console.log(responseError);
+
+		let id = "";
+		for(key in req.query) {
+			console.log(key);
+			if(key == "disponib")
+				id += req.query[key]
+			else
+				id += req.query[key]+"_"
+		}
+		cancellaItinerarioScaduto(id).then(()=>	console.log("Cancellato itinerario e aggiornato utenti"))
+			.catch((err)=>console.log("Errore cancellazione itinerario"));
+		console.log("Errore nel server");
 		res.send("Nessun itinerario trovato");
 	});
 });
@@ -223,21 +219,22 @@ app.get('/photo', function(req,res) {
 		query: place, 
 		moderate: true 
 	}).then(function(results) {
+//		console.log(results[0]);
 		for(let i = 0; i < results.length; i++) {
 			if(results[i].image.includes("https:")) {
-				console.log("DONE /photo sto mandando: "+results[i].image);
 				res.send(results[i].image);
 				break;
 			}
 		}
 	}).catch(function(err) {
-		console.log("ERROR /photo: "+err);
-		res.send("ERROR /photo: "+err);
+		console.log("Errore");
+		res.send("ERRORE");
 	});
 });
 
 app.get('/airline_data', function(req,res) {
 	var code = req.query.code;
+	
 	amadeus.referenceData.airlines.get({
 		airlineCodes : code
 	}).then(function(response0){
@@ -245,16 +242,22 @@ app.get('/airline_data', function(req,res) {
 			airlineCode : code
 		}).then(function(response1){
 			var obj = {"airline": response0.data, "urls": response1.data};
-			console.log("DONE /airline_data sto mandando: "); console.log(obj);
+			console.log(JSON.stringify(obj));
 			res.send(obj);
 		}).catch(function(response1Error){
-			console.log("ERROR /airline_data in checkinLinks: "+response1Error);
-			res.send(response1Error);
+			console.log(responseError);
+			res.send(responseError);
 		});
 	}).catch(function(response0Error){
-		console.log("ERROR /airline_data in airlines: "+response0Error);
 		res.send(response0Error);
 	});
+
+	return;
+	
+	//TESTING MODE:
+	var data = JSON.parse(fs.readFileSync('test_airline_data.json'));
+	res.send(data);
+
 });
 
 app.get('/preferito_aggiungi', function(req,res) {
@@ -263,8 +266,11 @@ app.get('/preferito_aggiungi', function(req,res) {
 	let m = date.getMonth() + 1; if(m < 10) m = "0"+m;
 	let d = date.getDate(); if(d < 10) d = "0"+d;
 	date = y+"-"+m+"-"+d;
+	console.log(date);
+	console.log("Preferito aggiungo----------------");
+	console.log(req.query);
 	if(req.query.disponib < date) { //se si tratta di un itinerario non valido
-		console.log("ERROR /preferito_aggiungi la data dell'itinerario non è valida");
+		console.log("Errore, itinerario non valido");
 		res.send("Errore, itinerario non valido");
 		return;
 	}
@@ -280,11 +286,12 @@ app.get('/preferito_aggiungi', function(req,res) {
 				"mete": new_itineraries
 			}
 			updateCRUD(userdb,user).then(function(res_updateu) { //...E AGGIORNO IL SUO ARRAY INSERENDO L'ITINERARIO.
+				console.log(req.session.user);
 				req.session.user.mete = new_itineraries;
-				console.log("DONE /preferito_aggiungi update utente: "+user.id);
+				console.log(req.session.user);
 				res.send("useless data");
-			}).catch(function(err_updateu) { console.log("ERROR /preferito_aggiungi update utente: "+err_updateu); res.send("useless data"); });
-		}).catch(function(err_readu) { console.log("ERROR /preferito_aggiungi read utente: "+err_readu); res.send("useless data"); });
+			}).catch(function(err_updateu) { console.log(err_updateu); res.send("useless data"); });
+		}).catch(function(err_readu) { console.log(err_readu); res.send("useless data"); });
 	}
 
 	readCRUD(itinerariesdb, {"id": req.query.meta_id}).then(function(res_readi) { //L'ITINERARIO ESISTE IN DB...
@@ -301,8 +308,7 @@ app.get('/preferito_aggiungi', function(req,res) {
 		};
 		updateCRUD(itinerariesdb, obj).then(function(res_updatei) { //...QUINDI AGGIORNO QUELL'ITINERARIO IN DB (userN+1)...
 			aux();
-			console.log("DONE /preferito_aggiungi update itinerario: "+obj.id);
-		}).catch(function(err_updatei) { console.log("ERROR /preferito_aggiungi update itinerario: "+err_updatei); res.send("useless data"); });
+		}).catch(function(err_updatei) { console.log(err_updatei); res.send("useless data"); });
 	}).catch(function(err_readi) { //SE INVECE L'ITINERARIO NON ESISTE IN DB...
 		let obj = {
 			"id": req.query.meta_id,
@@ -317,8 +323,8 @@ app.get('/preferito_aggiungi', function(req,res) {
 		};
 		createCRUD(itinerariesdb,obj).then(function(res_createi) { //...LO CREO E LO INSERISCO IN DB...
 			aux();
-			console.log("DONE /preferito_aggiungi create itinerario: "+obj.id);
-		}).catch(function(err_createi) { console.log("ERROR /preferito_aggiungi create itinerario: "+err_createi); res.send("useless data"); });
+		}).catch(function(err_createi) { console.log(err_createi); res.send("useless data"); });
+		console.log(err_readi)
 	});
 });
 
@@ -339,10 +345,10 @@ app.get('/preferito_rimuovi', function(req,res) {
 
 			updateCRUD(userdb,user).then(function(res_updateu) { //...E AGGIORNO IL SUO ARRAY TOGLIENDO L'ITINERARIO.
 				req.session.user.mete = new_itineraries;
-				console.log("DONE update user: "+user.id);
+				console.log(req.session.user);
 				res.send("useless data");
-			}).catch(function(err_updateu) { console.log("ERROR /preferito_rimuovi update user: "+err_updateu); res.send("useless data"); });
-		}).catch(function(err_readu) { console.log("ERROR /preferito_rimuovi read user: "+err_readu); res.send("useless data"); });
+			}).catch(function(err_updateu) { console.log(err_updateu); res.send("useless data"); });
+		}).catch(function(err_readu) { console.log(err_readu); res.send("useless data"); });
 	};
 
 	readCRUD(itinerariesdb, {"id": req.query.meta_id}).then(function(res_readi) { //L'ITINERARIO ESISTE IN DB...
@@ -358,38 +364,35 @@ app.get('/preferito_rimuovi', function(req,res) {
 			"userN": res_readi.userN-1											//decremento
 		};
 
-		if(obj["userN"] < 1) {													//nessun utente l'ha salvato									
+		if(obj["userN"] <1 ) {													//nessun utente l'ha salvato									
 			deleteCRUD(itinerariesdb,obj).then(function(res_deli){				//elimino da itineraries
-				aux();
-				console.log("DONE /preferito_rimuovi delete itinerario: "+obj.id);
-			}).catch(function(err_deli) { console.log("ERROR /preferito_rimuovi delete itinerario: "+err_deli); res.send("useless data"); });
+				console.log("Meta eliminata dalle preferite con successo!");
+			}).catch(function(err_deli) { console.log(err_deli+": Errore DELETE ITINERARIES"); res.send("useless data"); });
+			aux();																
 		}
 		else{
 			updateCRUD(itinerariesdb, obj).then(function(res_updatei) { //... AGGIORNO QUELL'ITINERARIO IN DB (almeno 1 utente lo ha salvato) ...
-				aux();
-				console.log("DONE read itinerario: "+obj.id);													
-			}).catch(function(err_updatei) { console.log("ERROR /preferito_rimuovi update itinerario: "+err_updatei); res.send("useless data"); });
+				aux();													
+			}).catch(function(err_updatei) { console.log(err_updatei+": Errore UPDATE ITINERARIES"); res.send("useless data"); });
 		}
 	}).catch(function(err_readi) { //SE INVECE L'ITINERARIO NON ESISTE IN DB...(errore : in teoria ciò non può accadere)
-		console.log("ERROR /preferito_rimuovi read itinerario: "+err_readi); res.send("useless data");
-		res.send("useless data");
+		console.log(err_readi+": Errore READ ITINERARIES"); res.send("useless data");
 	});
 });
 
 app.get("/condividi",function(req,res){
 	var data = req.query;
-	console.log("DONE /condividi sto reindirizzando alla condivisione");
+	console.log(data);
 	res.send(`https://www.facebook.com/dialog/share?app_id=${process.env.CLIENT_ID_FB}&display=popup&href=https://127.0.0.1:3000/meta_dettagli?
 		origin=${data.origin}%26destination=${data.destination}%26departureDate=${data.departureDate}%26prezzo=${data.prezzo}%26currency=${data.currency}%26
 		durata=${data.durata}%26disponib=${data.disponib}&quote=Guarda che bel viaggio mi farò!`);	
 });
 
-/*FUNZIONI AUSILIARIE---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+/*-------------------------------------------*/
 
 function cancellaItinerarioScaduto(id) {
 	return new Promise(function(resolve,reject) {
 		deleteCRUD(itinerariesdb, {"id": id}).then(function() {
-			console.log("DONE cancellaItinerarioScaduto delete itinerario: "+id);
 			readCRUD(userdb, {"id": "_all_docs?include_docs=true"}).then(function(res_readi) {
 				for(let i = 0; i < res_readi.total_rows; i++) {
 					let new_user = {
@@ -398,20 +401,20 @@ function cancellaItinerarioScaduto(id) {
 						"pic": res_readi.rows[i].doc.pic,
 						"mete": res_readi.rows[i].doc.mete.filter(x=>x != id)
 					}
-					updateCRUD(userdb, new_user).then(()=>console.log("DONE cancellaItinerarioScaduto update user: "+new_user.id))
+					console.log(new_user);
+					updateCRUD(userdb, new_user).then(()=>console.log("Aggiornato "+new_user.id))
 					.catch(function(err) {
-						console.log("ERROR cancellaItinerarioScaduto update user: "+err);
+						console.log("Errore update user");
 						reject(err);
 					});
 				}
-				console.log("DONE cancellaItinerarioScaduto read all users");
 				resolve("Aggiornato");
 			}).catch(function(err) {
-				console.log("ERROR cancellaItinerarioScaduto read all users: "+err);
+				console.log("Errore get tutti user");
 				reject(err);
 			});
 		}).catch(function(err) {
-			console.log("ERROR cancellaItinerarioScaduto delete itinerario: "+err);
+			console.log("Errore delete itinerario scaduto");
 			reject(err);
 		});
 	});
@@ -421,24 +424,21 @@ function userInfo(token) {
 	return new Promise(function(resolve,reject) {
 		request.get({url:'https://graph.facebook.com/v10.0/me/?fields=name,email,id,birthday,hometown&access_token='+token}, function (err0, res0, body0) {
 			if(err0) {
-				console.log("ERROR userInfo richiesta dati: "+err0);
 				reject("Errore di richiesta dati: "+err0);
 			} 
 			else {
+				console.log(body0);
 				var info= JSON.parse(body0);
 				request.get({url: `https://graph.facebook.com/v11.0/${info.id}/picture?redirect=false`}, function(err1, res1, body1) {
 					if(err1) {
-						console.log("ERROR userInfo richiesta picture: "+err1);
 						reject("Errore get foto fb: "+err1);
 					}
 					else {
-						let tosend = {
+						resolve({
 							"id": info.id,
 							"name": info.name,
 							"pic": JSON.parse(body1).data.url
-						};
-						console.log("DONE userInfo richiesta dati+picture sto mandando: "); console.log(tosend);
-						resolve(tosend);
+						});
 					}
 				});				
 			}
@@ -447,14 +447,17 @@ function userInfo(token) {
 }
 
 function cercaItinerari(origin, destination, departureDate) {
+	/*
 	return amadeus.shopping.flightOffersSearch.get({
 			originLocationCode: origin,
 			destinationLocationCode: destination,
 			departureDate: departureDate,
 			adults: '1'
 		});
+	*/
+
+	//TESTING MODE:
 	
-	//TESTING MODE:	
 	var data = JSON.parse(fs.readFileSync('test_cerca_itinerari.json'));
 	return new Promise(function(resolve,reject) {
 		if(data.length > 0)
@@ -462,24 +465,21 @@ function cercaItinerari(origin, destination, departureDate) {
 		else
 			reject("NONONO");
 	});
-
 }
 
-function coronaTracker(countries) {
+function coronaTracker(countries){
+	console.log("TRACKER-----------------------")
+	console.log(countries);
 	return new Promise(function(resolve, reject){
 		request.get({url:"http://api.coronatracker.com/v3/stats/worldometer/country"}, function(err0, res1, body0) {
 			if(err0) {
-				console.log("ERROR coronaTracker worldometer: "+err0);
 				reject("Errore di richiesta dati");
 			}
 			else {
 				request.get({url:"http://api.coronatracker.com/v1/travel-alert"}, function(err1, res1, body1) {
-				if(err1) {
-					console.log("ERROR coronaTracker travel-alert: "+err1);
+				if(err1)
 					reject("Errore di richiesta dati");
-				}
 				else {
-					console.log("DONE coronaTracker sto mandando dati relativi a: "+JSON.stringify(countries));
 					resolve(JSON.parse(body0).filter(x=>countries.map(y=>y.replace(/%20/g, ' ').toUpperCase()).includes(x.countryName.toUpperCase())).map(function(x) {
 						let alertMessage = "";
 						let countryCode = x.countryCode;
@@ -511,53 +511,9 @@ function coronaTracker(countries) {
 	});
 }
 
-function tuttiItinerari() {
-	let date = new Date();
-	let y = date.getFullYear();
-	let m = date.getMonth() + 1; if(m < 10) m = "0"+m;
-	let d = date.getDate(); if(d < 10) d = "0"+d;
-	date = y+"-"+m+"-"+d;
-	return new Promise(function(resolve, reject){
-		readCRUD(itinerariesdb, {"id": "_all_docs?include_docs=true"}).then(function(res_readi) {
-			let tosend = {"itineraries": []};
-			let todelete_id = []; 
-			for(let i = 0; i < res_readi.total_rows; i++) {
-				if(res_readi.rows[i].doc.lastTicketingDate < date) {
-					todelete_id.push(res_readi.rows[i].doc._id);
-				}
-				else {
-					tosend.itineraries.push(
-						{
-							"id": res_readi.rows[i].doc._id,
-							"origin": res_readi.rows[i].doc.origin,
-							"destination": res_readi.rows[i].doc.destination,
-							"departureDate": res_readi.rows[i].doc.departureDate,
-							"price": res_readi.rows[i].doc.price,
-							"currency": res_readi.rows[i].doc.currency,
-							"duration": res_readi.rows[i].doc.duration,
-							"lastTicketingDate": res_readi.rows[i].doc.lastTicketingDate,
-							"userN": res_readi.rows[i].doc.userN
-						}
-					);
-				}
-			}
-			for(let i = 0; i < todelete_id.length; i++) {
-				cancellaItinerarioScaduto(todelete_id[i]).then(()=>	console.log("DONE tuttiItinerari aggiornato utenti e cancellato itinerario: "+todelete_id[i]))
-					.catch((err)=>console.log("ERROR tuttiItinerari cancellazione itinerario: "+err));
-			}
-			console.log("DONE tuttiItinerari read all itineraries sto mandando: "); console.log(tosend);
-			resolve(tosend);
-		}).catch(function(err_readi) {
-			let tosend = {"error":"Errore nel caricamento delle mete!"};
-			console.log("ERROR tuttiItinerari read all itineraries: "+err_readi);
-			reject(tosend);
-		});
-	});
-}
-
-/*WEBSOCKET---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
-
 const httpServer = https.createServer(options, app);
+
+//Inizio WEBSOCKET
 const ws = new WebSocket.Server({ server: httpServer });
 
 CLIENTS=[];
@@ -582,11 +538,11 @@ function sendAll (message) {
 	}
 }
 
+//Fine WEBSOCKET
+
 httpServer.listen(port, function() { 
     console.log(`In ascolto sulla porta ${port}`);
 });
-
-/*FUNZIONI CRUD---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
 function createCRUD(db,obj) {
 	let toinsert = {};
@@ -599,21 +555,15 @@ function createCRUD(db,obj) {
 			body: JSON.stringify(toinsert)
 		}, function(error, res, body){
 			if(res.statusCode == 201) { //INSERITO
-				console.log("DONE createCRUD inserito: "+201);
 				resolve(obj);
 			} else if(res.statusCode == 409) {//Elemento già presente
-				console.log("ERROR createCRUD già presente: "+409);
-				updateCRUD(db,obj).then(function(resU) {
-					console.log("DONE createCRUD fatto update visto che già presente");
-					reject("DONE createCRUD fatto update visto che già presente");
-				}).catch(function(errU) {
-					console.log("ERROR createCRUD problema in updateCRUD: "+errU);
-					reject("ERROR createCRUD problema in updateCRUD: "+errU);
-				});
+				console.log(error);
+				reject("Elemento già presente");
+				updateCRUD(db,obj);
 			}
 			else {
-				console.log("ERROR createCRUD: "+error);
-				reject("ERROR createCRUD: "+error);
+				console.log(error);
+				reject("Errore, codice: "+res.statusCode);
 			}
 		});
 	});
@@ -625,16 +575,9 @@ function readCRUD(db,obj) {
 			url: db+obj.id, 
 			method: 'GET',
 		}, function(error, res, body){
-			if(error) {
-				console.log("ERROR readCRUD: "+error);
-				reject("ERROR readCRUD: "+error);
-			}
-			else if(res.statusCode != 200) {
-				console.log("ERROR readCRUD: "+JSON.parse(body).error);
-				reject(JSON.parse(body).error)
-			}
+			if(error) reject(error);
+			else if(res.statusCode != 200) reject(JSON.parse(body).error)
 			else{
-				console.log("DONE readCRUD");
 				resolve(JSON.parse(body));
 			}
 		});
@@ -652,22 +595,14 @@ function updateCRUD(db,obj) {
 				method: 'PUT',
 				body: JSON.stringify(toinsert), 
 			}, function(error, res){
-				if(error) {
-					console.log("ERROR updateCRUD: "+error);
-					reject("ERROR updateCRUD: "+error);
-				}
-				else if(res.statusCode != 201) { //non ho inserito
-					console.log("ERROR updateCRUD non ho inserito: "+res.statusCode);
-					reject("ERROR updateCRUD non ho inserito: "+res.statusCode);
-				}
+				if(error) {reject(error);}
+				else if(res.statusCode!=201) {reject(res.statusCode);}
 				else {
-					console.log("DONE updateCRUD");
 					resolve(true);
 				}
 			});
 		}).catch(function(err){
-			console.log("ERROR updateCRUD: "+err);
-			reject("ERROR updateCRUD: "+err);
+			reject(err);
 		});
 	});
 }
@@ -679,34 +614,26 @@ function deleteCRUD(db,obj) {
 				url: db+obj.id+"?rev="+result._rev,
 				method: 'DELETE',
 			}, function(error, res) {
-				if(error) {
-					console.log("ERROR deleteCRUD: "+error);
-					reject("ERROR deleteCRUD: "+error);
-				}
-				else if(res.statusCode != 200) {
-					console.log("ERROR deleteCRUD non ho cancellato: "+res.statusCode);
-					reject("ERROR deleteCRUD non ho cancellato: "+res.statusCode);
-				}
+				if(error) {reject(error);}
+				else if(res.statusCode!=200){reject(res.statusCode);}
 				else {
-					console.log("DONE deleteCRUD");
 					resolve(true);
 				}
 			});
 		}).catch(function(err) {
-			console.log("ERROR deleteCRUD: "+err);
-			reject("ERROR deleteCRUD: "+err);
+			reject(err);
 		});
 	});
 }
 
-/*API TERZE---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
-
+// SEZIONE --- API TERZE
 app.get("/api",function(req,res){
 	res.sendFile("./public/api.html",{root:__dirname});
 });
 
-//Itinerari, per casi----------------------------------------------------------------------------------------------------------------
+//Itinerari, per casi
 app.get("/api/tuttiItinerari",function(req,res){
+	console.log(req.query);
 	//Nessuna origine o destinazione inserita
 	if(typeof(req.query.origin) == 'undefined' && typeof(req.query.destination) == 'undefined' ){
 		tuttiItinerari().then(function(res0){
@@ -747,7 +674,52 @@ app.get("/api/tuttiItinerari",function(req,res){
 	}
 });
 
-//Destinazione in ordine crescente di contagi----------------------------------------------------------------------------------------------------------------
+function tuttiItinerari(){
+	let date = new Date();
+	let y = date.getFullYear();
+	let m = date.getMonth() + 1; if(m < 10) m = "0"+m;
+	let d = date.getDate(); if(d < 10) d = "0"+d;
+	date = y+"-"+m+"-"+d;
+	console.log(date);
+	return new Promise(function(resolve, reject){
+		readCRUD(itinerariesdb, {"id": "_all_docs?include_docs=true"}).then(function(res_readi) {
+			let tosend = {"itineraries": []};
+			let todelete_id = []; 
+			for(let i = 0; i < res_readi.total_rows; i++) {
+				if(res_readi.rows[i].doc.lastTicketingDate < date) {
+					todelete_id.push(res_readi.rows[i].doc._id);
+					console.log(todelete_id);
+					console.log(res_readi.rows[i].doc.lastTicketingDate);
+				}
+				else {
+					tosend.itineraries.push(
+						{
+							"id": res_readi.rows[i].doc._id,
+							"origin": res_readi.rows[i].doc.origin,
+							"destination": res_readi.rows[i].doc.destination,
+							"departureDate": res_readi.rows[i].doc.departureDate,
+							"price": res_readi.rows[i].doc.price,
+							"currency": res_readi.rows[i].doc.currency,
+							"duration": res_readi.rows[i].doc.duration,
+							"lastTicketingDate": res_readi.rows[i].doc.lastTicketingDate,
+							"userN": res_readi.rows[i].doc.userN
+						}
+					);
+				}
+			}
+			for(let i = 0; i < todelete_id.length; i++) {
+				cancellaItinerarioScaduto(todelete_id[i]).then(()=>	console.log("Cancellato itinerario e aggiornato utenti"))
+				.catch((err)=>console.log("Errore cancellazione itinerario"));
+			}
+			resolve(tosend);
+		}).catch(function(err_readi) {
+			let tosend = {"error":"Errore nel caricamento delle mete!"};
+			reject(tosend);
+		});
+	});
+}
+
+//Destinazione in ordine crescente di contagi
 app.get("/api/itinerariDatiCovid",function(req,res){
 	tuttiItinerari().then(function(body){
 		let countriesOnly = body.itineraries.map(el => GADB.find(x => x.IATA == el.destination).country);
@@ -787,7 +759,7 @@ app.get("/api/itinerariDatiCovid",function(req,res){
 	});
 });
 
-//Itinerari con dati covid della destinazione aggiornati in tempo reale----------------------------------------------------------------------------------------------------------------
+//Itinerari con dati covid della destinazione aggiornati in tempo reale
 app.get("/api/datiCovidPaesi", function(req,res) {
 	console.log(req.query.coutries);
 	if(typeof(req.query.countries) == "undefined") {
