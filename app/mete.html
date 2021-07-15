@@ -105,7 +105,7 @@
                 <b>Citt&agrave; di partenza</b>
                 <div class="fa fa-plane"></div> &ensp;
 
-                <input name="origin" list="suggestions" value="BANGKOK (THAILAND)">
+                <input name="origin" list="suggestions" value="BANGKOK - BKK (THAILAND)">
 
                 &ensp;
                 <div class="fa fa-angle-double-right"></div>
@@ -117,7 +117,7 @@
                 <b>Citt&agrave; di arrivo</b>
                 <div class="fa fa-plane"></div> &ensp;
 
-                <input name="destination" list="suggestions" value="AARHUS (DENMARK)">
+                <input name="destination" list="suggestions" value="AARHUS - AAR (DENMARK)">
                 
                 <br/>
                 <br/>
@@ -179,8 +179,10 @@
                 async: false,
                 success: function (data) {
                     GADB = data;
-                    arr = data.filter(v=>v.IATA!=`N/A`)
-                        .map(v=>`${v.city} (${v.country})`)
+//                    alert(JSON.stringify(GADB.filter(v=>typeof(v.city) == "undefined")));
+//                    alert(JSON.stringify(GADB.filter(v=>typeof(v.city) != "undefined" && v.city.includes(" - "))));
+                    arr = data.filter(v=>v.IATA!=`N/A` && typeof(v.city) != "undefined")
+                        .map(v=>`${v.city} - ${v.IATA} (${v.country})`)
                         .filter((v, i, a) => a.indexOf(v) === i)
                         .sort();
                     for(let i = 0; i < arr.length; i++) {
@@ -213,8 +215,11 @@
                 $("#table").html("");                
 			    $("#loading").html(`<div class="loader"></div>`);
                 
-                var origin = GADB.filter(v=>`${v.city} (${v.country})`==document.mainform.origin.value && v.IATA != "N/A")[0];
-                var destination = GADB.filter(v=>`${v.city} (${v.country})`==document.mainform.destination.value && v.IATA != "N/A")[0];
+                //var origin = GADB.filter(v=>`${v.city} (${v.country})`==document.mainform.origin.value && v.IATA != "N/A")[0];
+                //var destination = GADB.filter(v=>`${v.city} (${v.country})`==document.mainform.destination.value && v.IATA != "N/A")[0];
+
+                var origin = document.mainform.origin.value;
+                var destination = document.mainform.destination.value;
 
                 if(typeof(origin) == "undefined" || typeof(destination) == "undefined") {
                     alert("Dati origine o destinazione scorretti!");
@@ -222,8 +227,17 @@
                     return;
                 }
 
-                origin = origin.IATA;
-                destination = destination.IATA;
+                if(!origin.includes(" - ") || !destination.includes(" - ")) {
+                    alert("Dati origine o destinazione scorretti!");
+                    $("#loading").html("");
+                    return;
+                }
+
+//                origin = origin.IATA;
+//                destination = destination.IATA;
+
+                origin = origin.split(" - ")[1].split(" (")[0];
+                destination = destination.split(" - ")[1].split(" (")[0];
                 
                 $.ajax({
                     type: "GET",

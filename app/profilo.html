@@ -206,6 +206,7 @@
                                 <div class="fa fa-plane"></div>`;
                             html += `<b style="float: right;">${new Intl.NumberFormat('it-IT', { style: 'currency', currency: dettagliMeta[4] }).format(dettagliMeta[3])}</b></h4>`;
                             html += `<div class="list-group-item-text">
+                                DATA DI PARTENZA <b>${convertTime(dettagliMeta[2])}</b><br/>
                                 PRENOTAZIONI DISPONIBILI FINO AL <b>${dettagliMeta[6]}</b><br/>
                                 DURATA DELL'ITINERARIO: <b>${convertTime(dettagliMeta[5])}</b>
                                 <a class="details" href="https://localhost:3000/meta_dettagli${hiddenURL}" target="_blank">VEDI I DETTAGLI</a>

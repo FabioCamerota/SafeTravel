@@ -228,8 +228,8 @@
                             return;
                         } 
                         data = JSON.parse(d);
-                        let origin = data.itineraries[0].segments[0].departure.iataCode;
-                        let destination = data.itineraries[0].segments[data.itineraries[0].segments.length-1].arrival.iataCode;
+                        let origin = data.itineraries[0].segments[0].departure.iataCode; let iataO = origin;
+                        let destination = data.itineraries[0].segments[data.itineraries[0].segments.length-1].arrival.iataCode; let iataD =destination;
 
                         origin = GADB.filter(v=>v.IATA==origin)[0];
                         origin = origin.city+" ("+origin.country+")";
@@ -244,19 +244,29 @@
                         });
                         allcities.push(destination);
 
+                        let itineraryData = data.itineraries[0].segments.map(function(x) {
+                            let obj = {
+                                "info": x,
+                                "fares": data.travelerPricings[0].fareDetailsBySegment.find(y=>y.segmentId==x.id)
+                            }
+                            return obj;
+                        });
+
                         $("#itinerario").html(`
 
                             <div class="text-center">
                                 <div class="title"><b>
                                     <div class="fa fa-plane"></div>
-                                    ${origin}
+                                    ${origin+" - "+iataO}
                                     <div class="fa fa-angle-double-right"></div>
                                     <div class="fa fa-angle-double-right"></div>
                                     <div class="fa fa-angle-double-right"></div> 
-                                    ${destination}
+                                    ${destination+" - "+iataD}
                                     <div class="fa fa-plane"></div>
                                 </b></div>
                                 <h3>PREZZO: <b>${new Intl.NumberFormat('it-IT', { style: 'currency', currency: data.price.currency }).format(data.price.grandTotal)}</b></h3>
+                                <h3>DATA DI PARTENZA <b>${convertDate(itineraryData[0].info.departure.at)} (ORA LOCALE)</b></h3>
+                                <h3>DATA DI ARRIVO <b>${convertDate(itineraryData[itineraryData.length-1].info.arrival.at)} (ORA LOCALE)</b></h3>
                                 <h3>DURATA DELL'ITINERARIO: <b>${convertTime(data.itineraries[0].duration)}</b></h3>
                                 <h3>PRENOTAZIONI DISPONIBILI FINO AL <b>${data.lastTicketingDate}</b></h3>
                             </div>
@@ -268,13 +278,7 @@
 
                         if(--elements2load <= 0) $("#loading").html("");
 
-                        mainBody(allcities, data.itineraries[0].segments.map(function(x) {
-                            let obj = {
-                                "info": x,
-                                "fares": data.travelerPricings[0].fareDetailsBySegment.find(y=>y.segmentId==x.id)
-                            }
-                            return obj;
-                        }));
+                        mainBody(allcities, itineraryData);
                         airlineSearch(data.validatingAirlineCodes[0]);
                         let meta_id = window.location.search.substring(1).split("&").map(x=>x.split("=")[1]).reduce((a,b)=>a+"_"+b);
                         isSaved(meta_id);
