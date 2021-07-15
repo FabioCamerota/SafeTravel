@@ -6,12 +6,12 @@
  */
 
 /**
- * @api {get} /datiCovidPaesi/:destination Itinerari con dati covid dei Paesi di destinazione inseriti
+ * @api {get} /datiCovidPaesi/:countries Itinerari con dati covid dei Paesi di destinazione inseriti
  * @apiName GetDatiCovid
  * @apiGroup Dati Covid
  *
- * @apiParam {String} destination Nome del Paese di destinazione.
- * @apiParam {String} [destination2] Nome di un ulteriore Paese di destinazione.
+ * @apiParam {String} countries[0] Nome del Paese di destinazione.
+ * @apiParam {String} countries[1] Nome di un ulteriore Paese di destinazione.
  *
  * @apiSuccess {Array} data Array di dati Covid.
  * @apiSuccess {String} countryCode  Codice univoco del Paese di destinazione inserito.
@@ -55,8 +55,8 @@
  * @apiName GetItinerari
  * @apiGroup Itinerari
  *
- * @apiParam {String} [origin] Nome della città di partenza.
- * @apiParam {String} [destination] Nome della città di destinazione.
+ * @apiParam {String} [origin] Codice della città di partenza.
+ * @apiParam {String} [destination] Codice della città di destinazione.
  *
  * @apiSuccess {Array} itineraries Array di itenerari.
  * @apiSuccess {String} id  Id univoco dell'itinerario.
@@ -114,7 +114,7 @@
  *
  * @apiSuccess {Array} itineraries Array di itenerari.
  * @apiSuccess {String} id  Id univoco dell'itinerario.
- * @apiSuccess {String} origin  Nome della città di partenza.
+ * @apiSuccess {String} origin Nome della città di partenza.
  * @apiSuccess {String} destination  Nome della città di destinazione.
  * @apiSuccess {String} departureDate  Data di partenza.
  * @apiSuccess {String} price  Prezzo.

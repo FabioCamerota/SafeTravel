@@ -181,8 +181,12 @@
             });
 
             function convertTime(time) {
-                if(time.includes("M"))
-                    return time.replace("PT","").replace("H"," ORE E ").replace("M", " MINUTI");
+                if(time.includes("M")) {
+                    if(time.replace("PT","").split("H")[0] == "1")
+                        return time.replace("PT","").replace("H"," ORA E ").replace("M", " MINUTI");
+                    else
+                        return time.replace("PT","").replace("H"," ORE E ").replace("M", " MINUTI");
+                }
                 else {
                     if(time.replace("PT","").replace("H","") == "1")
                         return time.replace("PT","").replace("H"," ORA");
@@ -199,6 +203,7 @@
             }
 
             function caricaItinerario() {
+                //?origin=BKK&destination=AAR&departureDate=2021-08-01&prezzo=481.37&currency=EUR&durata=PT18H35M&disponib=2021-08-01
                 $.ajax({
                     type: "GET",
                     url: "https://localhost:3000/meta_dettagli_data"+window.location.search,

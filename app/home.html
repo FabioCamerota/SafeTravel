@@ -131,8 +131,12 @@
             });
 
             function convertTime(time) {
-                if(time.includes("M"))
-                    return time.replace("PT","").replace("H"," ORE E ").replace("M", " MINUTI");
+                if(time.includes("M")) {
+                    if(time.replace("PT","").split("H")[0] == "1")
+                        return time.replace("PT","").replace("H"," ORA E ").replace("M", " MINUTI");
+                    else
+                        return time.replace("PT","").replace("H"," ORE E ").replace("M", " MINUTI");
+                }
                 else {
                     if(time.replace("PT","").replace("H","") == "1")
                         return time.replace("PT","").replace("H"," ORA");
@@ -193,7 +197,7 @@
                     success: function(data) {
                         user = data;
 
-                        $(".profile_pic").append(`
+                        $(".profile_pic").html(`
                             <img class="navbar-right" src="${user.pic}"  style="border-radius: 0.5vw; margin-right:2%;" width="50">
                         `);
                         

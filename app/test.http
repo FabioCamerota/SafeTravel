@@ -65,16 +65,13 @@ GET https://www.google.com/search?q=kirby&tbm=isch&ie=utf-8&oe=utf-8&sclient=gws
 GET http://admin:admin@127.0.0.1:5984/users/_all_docs?include_docs=true
 
 ###
+GET http://admin:admin@127.0.0.1:5984/users/_all_docs
+
+###
 GET http://admin:admin@127.0.0.1:5984/users/4268688203170663
 
 ###
 GET http://admin:admin@127.0.0.1:5984/itineraries/BKK_AAR_2021-08-01_1019.80_EUR_PT18H45M_2021-06-28
-
-###
-GET https://127.0.0.1:3000/api/tuttiItinerari?destination=aar&origin=bkk
-
-###
-GET https://127.0.0.1:3000/api/itinerariDatiCovid
 
 ###
 GET http://api.coronatracker.com/v3/stats/worldometer/country?countryName=Jersey
@@ -83,7 +80,10 @@ GET http://api.coronatracker.com/v3/stats/worldometer/country?countryName=Jersey
 GET http://api.coronatracker.com/v1/travel-alert?countryCode=FR
 
 ###
-GET https://127.0.0.1:3000/profilo
+GET https://127.0.0.1:3000/api/tuttiItinerari?destination=aar&origin=bkk
+
+###
+GET https://127.0.0.1:3000/api/itinerariDatiCovid
 
 ###
 GET https://127.0.0.1:3000/api/datiCovidPaesi
@@ -99,3 +99,6 @@ GET https://127.0.0.1:3000/api/datiCovidPaesi?countries[0]=THAILAND&countries[1]
 
 ###
 GET https://graph.facebook.com/v11.0/335247768157626/picture?redirect=false
+
+###
+GET https://localhost:3000/airline_data?code=QR

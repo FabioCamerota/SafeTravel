@@ -5,7 +5,7 @@ const session = require('express-session');
 const fs = require('fs');
 const https = require('https');
 const cors = require('cors');
-const Amadeus = require('amadeus');
+const Amadeus = require('amadeus'); //altrimenti request
 const { image_search, image_search_generator } = require("duckduckgo-images-api");
 const WebSocket = require('ws');
 const { response } = require('express');
@@ -73,13 +73,13 @@ app.get('/home', function(req,res) {
 		console.log("Non autorizzato");
 		res.redirect('/');
 	}
-	else if(req.query.code!=null || req.session.code!=null) {
+	else if(req.query.code != null || req.session.code != null) {
 		var code= req.query.code;
 		request.get({
 			url:`https://graph.facebook.com/v10.0/oauth/access_token?client_id=${client_id}&redirect_uri=https://localhost:3000/home&client_secret=${client_secret}&code=${code}`
 		}, function(err, res_get, body) {
 			if (err) {
-				return console.error('Auth failed:', err);
+				return console.log('Auth failed: '+err);
 			}
 			var info = JSON.parse(body);
 			if(info.error) {
@@ -87,23 +87,25 @@ app.get('/home', function(req,res) {
 			}
 			else {
 				userInfo(info.access_token).then(function(response) {
-					readCRUD(userdb, {"id": response.id}).then(function(res_read) {
-						updateCRUD(userdb, {"id": response.id, "nome": res_read.nome, "pic": response.pic, "mete": res_read.mete}).then(function(res_update) {
+					readCRUD(userdb, {"id": response.id}).then(function(res_read) { //verifico se l'utente già presente nel db
+						updateCRUD(userdb, {"id": response.id, "nome": res_read.nome, "pic": response.pic, "mete": res_read.mete}).then(function(res_update) { //già presente
 							req.session.user = {"id": response.id, "nome": res_read.nome, "pic": response.pic, "mete": res_read.mete};
 							console.log("DONE /home ho fatto update dell'user: "+response.id);
 							res.sendFile("home.html",{root:__dirname});	
 						}).catch(function(err_update) {
 							console.log("ERROR /home update user: "+err_update);
-							res.send("ERROR update user: "+err_update);
+							res.redirect("/");
+//							res.send("ERROR update user: "+err_update);
 						});
-					}).catch(function(err_read) {
+					}).catch(function(err_read) { //non è presente
 						createCRUD(userdb, {"id": response.id, "nome": response.name, "pic": response.pic, "mete": []}).then(function(res_create) {
 							req.session.user = {"id": response.id, "nome": response.name, "pic": response.pic, "mete": []};
 							console.log("DONE /home ho create un nuovo user: "+response.id);
 							res.sendFile("home.html",{root:__dirname});
 						}).catch(function(err_create) {
 							console.log("ERROR /home create user: "+err_create);
-							res.send("ERROR create user: "+err_create);
+							res.redirect("/");
+//							res.send("ERROR create user: "+err_create);
 						});
 					});
 				}).catch(function(err) {
@@ -131,7 +133,7 @@ app.get('/profilo', function(req, res) {
 });
 
 app.get('/profilo_dati', function(req, res) {
-	readCRUD(userdb,{"id":req.session.user.id}).then(function(res_readu) {
+	readCRUD(userdb, {"id":req.session.user.id}).then(function(res_readu) {
 		req.session.user = {"id": res_readu._id, "nome": res_readu.nome, "pic": res_readu.pic, "mete": res_readu.mete};
 		console.log("DONE /profilo_dati ho fatto la read e sto mandando: "); console.log(req.session.user);
 		res.send(req.session.user);
@@ -172,10 +174,12 @@ app.get('/meta_dettagli', function(req,res) {
 	else
 		res.sendFile("accesso.html",{root:__dirname});
 */
+	//Chiunque può accedere ai dettagli
 	res.sendFile("meta_dettagli.html",{root:__dirname});
 });
 
 app.get('/meta_dettagli_data', function(req,res) {
+	//id dell'itinerario in couchdb, per esempio BKK_AAR_2021-08-01_2690.90_EUR_PT19H_2021-08-01
 	let id = "";
 	for(key in req.query) {
 		console.log(key);
@@ -198,13 +202,13 @@ app.get('/meta_dettagli_data', function(req,res) {
 				v.lastTicketingDate == req.query.disponib &&
 				v.price.grandTotal == req.query.prezzo;
 			})[0];
-			if(typeof(itinerario) == "undefined") {
+			if(typeof(itinerario) == "undefined") { //Utente accede a questo url, ma la meta non esiste più, accade solo se tutti posti già prenotati, quindi amadeus non restituisce niente
 				cancellaItinerarioScaduto(id).then(()=>	console.log("DONE /meta_dettagli_data aggiornato utenti e cancellato itinerario: "+id))
 					.catch((err)=>console.log("ERROR /meta_dettagli_data cancellazione itinerario: "+err));
 				console.log("Nessun itinerario trovato");
 				res.send("Nessun itinerario trovato");
 			}
-			else {
+			else { //ho trovato l'itinerario specifico richiesto
 				console.log("DONE /meta_dettagli_data trovato itinerario sto mandando: "); console.log(itinerario);
 				res.send(JSON.stringify(itinerario));
 			}
@@ -243,7 +247,7 @@ app.get('/airline_data', function(req,res) {
 	}).then(function(response0){
 		amadeus.referenceData.urls.checkinLinks.get({
 			airlineCode : code
-		}).then(function(response1){
+		}).then(function(response1) {
 			var obj = {"airline": response0.data, "urls": response1.data};
 			console.log("DONE /airline_data sto mandando: "); console.log(obj);
 			res.send(obj);
@@ -381,16 +385,16 @@ app.get("/condividi",function(req,res){
 	console.log("DONE /condividi sto reindirizzando alla condivisione");
 	res.send(`https://www.facebook.com/dialog/share?app_id=${process.env.CLIENT_ID_FB}&display=popup&href=https://127.0.0.1:3000/meta_dettagli?
 		origin=${data.origin}%26destination=${data.destination}%26departureDate=${data.departureDate}%26prezzo=${data.prezzo}%26currency=${data.currency}%26
-		durata=${data.durata}%26disponib=${data.disponib}&quote=Guarda che bel viaggio mi farò!`);	
+		durata=${data.durata}%26disponib=${data.disponib}&quote=Guarda che bel viaggio mi farò!`);
 });
 
 /*FUNZIONI AUSILIARIE---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
 function cancellaItinerarioScaduto(id) {
 	return new Promise(function(resolve,reject) {
-		deleteCRUD(itinerariesdb, {"id": id}).then(function() {
+		deleteCRUD(itinerariesdb, {"id": id}).then(function() { //cancello l'itinerario che ha quel id
 			console.log("DONE cancellaItinerarioScaduto delete itinerario: "+id);
-			readCRUD(userdb, {"id": "_all_docs?include_docs=true"}).then(function(res_readi) {
+			readCRUD(userdb, {"id": "_all_docs?include_docs=true"}).then(function(res_readi) { //delete on cascade, prendo tutti gli utenti ed aggiorno l'array
 				for(let i = 0; i < res_readi.total_rows; i++) {
 					let new_user = {
 						"id": res_readi.rows[i].id,
@@ -400,7 +404,7 @@ function cancellaItinerarioScaduto(id) {
 					}
 					updateCRUD(userdb, new_user).then(()=>console.log("DONE cancellaItinerarioScaduto update user: "+new_user.id))
 					.catch(function(err) {
-						console.log("ERROR cancellaItinerarioScaduto update user: "+err);
+						console.log("ERROR cancellaItinerarioScaduto update user id: "+new_user.id+" "+err);
 						reject(err);
 					});
 				}
@@ -419,7 +423,7 @@ function cancellaItinerarioScaduto(id) {
 
 function userInfo(token) {
 	return new Promise(function(resolve,reject) {
-		request.get({url:'https://graph.facebook.com/v10.0/me/?fields=name,email,id,birthday,hometown&access_token='+token}, function (err0, res0, body0) {
+		request.get({url:'https://graph.facebook.com/v10.0/me/?fields=name,email,id&access_token='+token}, function (err0, res0, body0) {
 			if(err0) {
 				console.log("ERROR userInfo richiesta dati: "+err0);
 				reject("Errore di richiesta dati: "+err0);
@@ -518,11 +522,11 @@ function tuttiItinerari() {
 	let d = date.getDate(); if(d < 10) d = "0"+d;
 	date = y+"-"+m+"-"+d;
 	return new Promise(function(resolve, reject){
-		readCRUD(itinerariesdb, {"id": "_all_docs?include_docs=true"}).then(function(res_readi) {
-			let tosend = {"itineraries": []};
-			let todelete_id = []; 
+		readCRUD(itinerariesdb, {"id": "_all_docs?include_docs=true"}).then(function(res_readi) { //prelevo tutti gli itinerari
+			let tosend = {"itineraries": []}; //array di itinerari da mandare
+			let todelete_id = []; //id degli itinerari da eliminare
 			for(let i = 0; i < res_readi.total_rows; i++) {
-				if(res_readi.rows[i].doc.lastTicketingDate < date) {
+				if(res_readi.rows[i].doc.lastTicketingDate < date) { //data non valida
 					todelete_id.push(res_readi.rows[i].doc._id);
 				}
 				else {
@@ -541,7 +545,7 @@ function tuttiItinerari() {
 					);
 				}
 			}
-			for(let i = 0; i < todelete_id.length; i++) {
+			for(let i = 0; i < todelete_id.length; i++) { //elimino tutti itinerari non validi
 				cancellaItinerarioScaduto(todelete_id[i]).then(()=>	console.log("DONE tuttiItinerari aggiornato utenti e cancellato itinerario: "+todelete_id[i]))
 					.catch((err)=>console.log("ERROR tuttiItinerari cancellazione itinerario: "+err));
 			}
@@ -575,8 +579,8 @@ ws.on('connection', function(conn) {
 	});
 });
 
-function sendAll (message) {
-	for (var i=0; i<CLIENTS.length; i++) {
+function sendAll(message) {
+	for (var i=0; i < CLIENTS.length; i++) {
 		var j=i+1;
 		CLIENTS[i].send("Messaggio per il client "+j+": "+message);
 	}

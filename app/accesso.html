@@ -18,6 +18,13 @@
 
         <!--STILI PERSONALIZZATI-->
         <style>
+            body {
+                background-image: url('https://wallpaperaccess.com/full/185289.jpg') !important;
+                background-repeat: no-repeat;
+                background-attachment: fixed;
+                background-position: center;
+                background-size: cover;
+            }
             .title {
                 font-size: 400%;
                 text-align: center;
@@ -34,15 +41,23 @@
     </header>
     <body>
         <div class="text-center">
-            <div class="title">SafeTravel</div>
-
-            <p class="desc">Scegli dove andrai vacanza in tutta sicurezza</p>
-
-            <a href="https://localhost:3000/login" class="btn btn-primary">
-                <img src="https://cdn.usbrandcolors.com/images/logos/facebook-logo.svg" width="30px">
-                ACCEDI CON FACEBOOK
-            </a>
-        </div>
+            <div class="list-group-item text-center" style="border-radius: 1vw; background-color: lightblue; margin: 9%; opacity: 0.9;">
+                <h4 class="list-group-item-heading" style="font-weight: bold;">
+                    <div class="fa fa-plane" style="font-size: 300%;"></div>&ensp;
+                    <span class="title">SafeTravel</span>
+                    &ensp;<div class="fa fa-plane" style="font-size: 300%;"></div>
+                </h4>
+                <div class="list-group-item-text">
+                    <p class="desc">Scegli dove andrai vacanza in tutta sicurezza</p>
+                    <h4>Cerca tutti i voli di oltre 500 linee aeree<br/>
+                    Viaggia in sicurezza confrontando i dati COVID-19 dei paesi di destinazione</h4>
+                    <a href="https://localhost:3000/login" class="btn btn-primary">
+                        <img src="https://cdn.usbrandcolors.com/images/logos/facebook-logo.svg" width="30px">
+                        ACCEDI CON FACEBOOK
+                    </a>
+                </div>
+            </div>
+        </div>          
 
         <script>
             $("#login").click(function() {

@@ -121,7 +121,9 @@
                 
                 <br/>
                 <br/>
-                <b>Data di partenza</b>&ensp;
+                <div class="fa fa-calendar"></div>
+                <b>Data di partenza</b>
+                <div class="fa fa-calendar"></div> &ensp;
                 <input type="date" id="depdate" name="departureDate" value="2021-08-01" min="2018-01-01">
                 <br/>
                 <br/>
@@ -150,8 +152,12 @@
             var elements2load = 2;
 
             function convertTime(time) {
-                if(time.includes("M"))
-                    return time.replace("PT","").replace("H"," ORE E ").replace("M", " MINUTI");
+                if(time.includes("M")) {
+                    if(time.replace("PT","").split("H")[0] == "1")
+                        return time.replace("PT","").replace("H"," ORA E ").replace("M", " MINUTI");
+                    else
+                        return time.replace("PT","").replace("H"," ORE E ").replace("M", " MINUTI");
+                }
                 else {
                     if(time.replace("PT","").replace("H","") == "1")
                         return time.replace("PT","").replace("H"," ORA");
@@ -228,7 +234,25 @@
                             $("#loading").html("");
                         }
                         else {
-                            data2Flights(JSON.parse(data));
+                            let distinct_data = [];
+                            let distinct_id = []
+                            for(let i = 0; i < JSON.parse(data).length; i++) {
+                                let flightOffer = JSON.parse(data)[i];
+                                let itineraries = flightOffer.itineraries;
+                                let itinerary = itineraries[0];
+                                let origin = itinerary.segments[0].departure.iataCode;
+                                let destination = itinerary.segments[itinerary.segments.length-1].arrival.iataCode;
+                                let departureDate = itinerary.segments[0].departure.at.split("T")[0];
+                                let metaID = `${origin}_${destination}_${departureDate}_${flightOffer.price.grandTotal}_${flightOffer.price.currency}_${flightOffer.itineraries[0].duration}_${flightOffer.lastTicketingDate}`;
+
+                                if(!distinct_id.includes(metaID)) {
+                                    distinct_id.push(metaID);
+                                    distinct_data.push(flightOffer);
+                                }
+                            }
+
+//                            data2Flights(JSON.parse(data));
+                            data2Flights(distinct_data);
                             if(--elements2load <= 0) $("#loading").html("");
                         }
                     },
