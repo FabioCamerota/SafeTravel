@@ -8,7 +8,6 @@ const cors = require('cors');
 const Amadeus = require('amadeus'); //altrimenti request
 const { image_search, image_search_generator } = require("duckduckgo-images-api");
 const WebSocket = require('ws');
-const { response } = require('express');
 
 var app = express(); // Express configuration
 
@@ -19,7 +18,9 @@ app.use(cors()); //cors policy
 app.use(session({ //SESSION
 	secret: 'RDC-progetto',
 	resave: true,
+	/*Forza la sessione a essere risalvata nel session store, anche se mai modificata nei request*/
 	saveUninitialized: false,
+	/*Forza una sessione non inizializzata a essere salvata. Se false aiuta con le race conditions*/
 }));
 
 const options = {
@@ -60,6 +61,7 @@ app.get('/', function(req,res) {
 });
 
 app.get('/login', function(req,res) {
+	//AUTHORIZATION REQUEST AL RESOURCE OWNER CON SCOPE
 	res.redirect(`https://www.facebook.com/v10.0/dialog/oauth?response_type=code&scope=email&client_id=${client_id}&redirect_uri=https://localhost:3000/home&client_secret=${client_secret}`);
 });
 
@@ -75,7 +77,7 @@ app.get('/home', function(req,res) {
 	}
 	else if(req.query.code != null || req.session.code != null) {
 		var code= req.query.code;
-		request.get({
+		request.get({ //AUTHORIZATION GRANT ALL'AUTHORIZATION SERVER PER AVERE ACCESS TOKEN
 			url:`https://graph.facebook.com/v10.0/oauth/access_token?client_id=${client_id}&redirect_uri=https://localhost:3000/home&client_secret=${client_secret}&code=${code}`
 		}, function(err, res_get, body) {
 			if (err) {
@@ -86,7 +88,7 @@ app.get('/home', function(req,res) {
 				res.redirect("/");
 			}
 			else {
-				userInfo(info.access_token).then(function(response) {
+				userInfo(info.access_token).then(function(response) { //RICHIESTA AL RESOURCE SERVER CON ACESS TOKEN PER AVERE DATI UTENTE
 					readCRUD(userdb, {"id": response.id}).then(function(res_read) { //verifico se l'utente già presente nel db
 						updateCRUD(userdb, {"id": response.id, "nome": res_read.nome, "pic": response.pic, "mete": res_read.mete}).then(function(res_update) { //già presente
 							req.session.user = {"id": response.id, "nome": res_read.nome, "pic": response.pic, "mete": res_read.mete};
@@ -162,7 +164,6 @@ app.get('/cerca_itinerari', function(req,res) {
 		console.log("ERROR /cerca_itinerari: "+responseError);
 		res.send("L'itinerario non esiste");
 	});
-
 });
 
 app.get('/meta_dettagli', function(req,res) {
@@ -793,11 +794,18 @@ app.get("/api/itinerariDatiCovid",function(req,res){
 
 //Itinerari con dati covid della destinazione aggiornati in tempo reale----------------------------------------------------------------------------------------------------------------
 app.get("/api/datiCovidPaesi", function(req,res) {
-	console.log(req.query.coutries);
+	console.log(req.query.countries);
 	if(typeof(req.query.countries) == "undefined") {
 		res.send({"error": "Errore, inserire almeno un paese!"});
 	}
 	else if(Array.isArray(req.query.countries)) {
+		let bool = 0; //controllo se array vuoto o no
+		for(let i = 0; i < req.query.countries.length; i++) { 
+			if(req.query.countries[i].length==0) bool++; 
+			console.log(req.query.countries[i].length); 
+		}
+		if(bool == req.query.countries.length) {res.send({"error": "Errore, inserire almeno un paese!"}); return; }
+		
 		coronaTracker(req.query.countries).then(function(res1){
 			res.send({"data": res1});
 		}).catch(function(err){

@@ -1,7 +1,7 @@
 define({ "api": [
   {
     "type": "get",
-    "url": "/datiCovidPaesi/:countries",
+    "url": "/datiCovidPaesi?countries",
     "title": "Itinerari con dati covid dei Paesi di destinazione inseriti",
     "name": "GetDatiCovid",
     "group": "Dati_Covid",
@@ -104,7 +104,7 @@ define({ "api": [
     "groupTitle": "Dati_Covid",
     "sampleRequest": [
       {
-        "url": "https://localhost:3000/api/datiCovidPaesi/:countries"
+        "url": "https://localhost:3000/api/datiCovidPaesi?countries"
       }
     ]
   },

@@ -6,7 +6,7 @@
  */
 
 /**
- * @api {get} /datiCovidPaesi/:countries Itinerari con dati covid dei Paesi di destinazione inseriti
+ * @api {get} /datiCovidPaesi?countries Itinerari con dati covid dei Paesi di destinazione inseriti
  * @apiName GetDatiCovid
  * @apiGroup Dati Covid
  *

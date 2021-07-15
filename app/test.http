@@ -99,6 +99,3 @@ GET https://127.0.0.1:3000/api/datiCovidPaesi?countries[0]=THAILAND&countries[1]
 
 ###
 GET https://graph.facebook.com/v11.0/335247768157626/picture?redirect=false
-
-###
-GET https://localhost:3000/airline_data?code=QR
