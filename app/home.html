@@ -310,10 +310,33 @@
                         });
 
                         $("#sort_by_duration").click(function() {
+                            //PT1H40M PT40M PT1H
                             let sorted_data = itineraries.sort(function(a,b) {
+                                function aux(time) {
+                                    let h;
+                                    let m;
+                                    if(time.includes("H")) {
+                                        h = parseInt(time.replace("PT","").split("H")[0]);
+                                        if(time.includes("M"))
+                                            m = parseInt(time.replace("PT","").split("H")[1].replace("M",""));
+                                        else
+                                            m = 0;
+                                    }
+                                    else {
+                                        h = 0;
+                                        if(time.includes("M"))
+                                            m = parseInt(time.replace("PT","").replace("M",""));
+                                        else
+                                            m = 0;
+                                    }
+                                    return h*60+m;
+                                }
+                                return aux(a.duration) - aux(b.duration);
+                                /*
                                 if(a.duration > b.duration) return 1;
                                 else if(a.duration < b.duration) return -1;
                                 else return 0;
+                                */
                             });
                             caricaDatiUtente(sorted_data);
                         });

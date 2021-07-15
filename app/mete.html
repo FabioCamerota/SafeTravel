@@ -442,9 +442,26 @@
 
                 $("#sort_by_duration").click(function() {
                     let sorted_data = flightOffers.sort(function(a,b) {
-                        if(a.itineraries[0].duration > b.itineraries[0].duration) return 1;
-                        else if(a.itineraries[0].duration < b.itineraries[0].duration) return -1;
-                        else return 0;
+                        function aux(time) {
+                            let h;
+                            let m;
+                            if(time.includes("H")) {
+                                h = parseInt(time.replace("PT","").split("H")[0]);
+                                if(time.includes("M"))
+                                    m = parseInt(time.replace("PT","").split("H")[1].replace("M",""));
+                                else
+                                    m = 0;
+                            }
+                            else {
+                                h = 0;
+                                if(time.includes("M"))
+                                    m = parseInt(time.replace("PT","").replace("M",""));
+                                else
+                                    m = 0;
+                            }
+                            return h*60+m;
+                        }
+                        return aux(a.itineraries[0].duration) - aux(b.itineraries[0].duration);
                     });
                     data2Flights(sorted_data);
                 });
