@@ -263,7 +263,8 @@ app.get('/airline_data', function(req,res) {
 });
 
 app.get('/preferito_aggiungi', function(req,res) {
-	if(typeof(req.session.user) == "undefined") {
+	if(typeof(req.session.user) == "undefined" || chiamataNonValida(req.query)) {
+		console.log("ERROR /preferito_aggiungi chiamata non valida");
 		res.sendFile("accesso.html",{root:__dirname});
 		return;
 	}
@@ -333,10 +334,12 @@ app.get('/preferito_aggiungi', function(req,res) {
 });
 
 app.get('/preferito_rimuovi', function(req,res) {
-	if(typeof(req.session.user) == "undefined") {
+	if(typeof(req.session.user) == "undefined" || chiamataNonValida(req.query)) {
+		console.log("ERROR /preferito_rimuovi chiamata non valida");
 		res.sendFile("accesso.html",{root:__dirname});
 		return;
 	}
+
 
 	function aux() {
 		readCRUD(userdb,{"id": req.query.user}).then(function(res_readu) { //...LEGGO POI I DATI DELL'UTENTE...
@@ -568,6 +571,19 @@ function tuttiItinerari() {
 			reject(tosend);
 		});
 	});
+}
+
+function chiamataNonValida(toadd) {
+	if(typeof(toadd.user) == "undefined") return true;
+	if(typeof(toadd.meta_id) == "undefined") return true;
+	if(typeof(toadd.origin) == "undefined") return true;
+	if(typeof(toadd.destination) == "undefined") return true;
+	if(typeof(toadd.departureDate) == "undefined") return true;
+	if(typeof(toadd.prezzo) == "undefined") return true;
+	if(typeof(toadd.currency) == "undefined") return true;
+	if(typeof(toadd.durata) == "undefined") return true;
+	if(typeof(toadd.disponib) == "undefined") return true;
+	return false;
 }
 
 /*WEBSOCKET---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
