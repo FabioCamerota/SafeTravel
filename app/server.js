@@ -263,6 +263,11 @@ app.get('/airline_data', function(req,res) {
 });
 
 app.get('/preferito_aggiungi', function(req,res) {
+	if(typeof(req.session.user) == "undefined") {
+		res.sendFile("accesso.html",{root:__dirname});
+		return;
+	}
+
 	let date = new Date();
 	let y = date.getFullYear();
 	let m = date.getMonth() + 1; if(m < 10) m = "0"+m;
@@ -328,6 +333,11 @@ app.get('/preferito_aggiungi', function(req,res) {
 });
 
 app.get('/preferito_rimuovi', function(req,res) {
+	if(typeof(req.session.user) == "undefined") {
+		res.sendFile("accesso.html",{root:__dirname});
+		return;
+	}
+
 	function aux() {
 		readCRUD(userdb,{"id": req.query.user}).then(function(res_readu) { //...LEGGO POI I DATI DELL'UTENTE...
 			let new_itineraries = res_readu.mete;
